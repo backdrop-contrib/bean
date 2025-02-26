@@ -5,21 +5,12 @@
  * Some unit-like tests.
  */
 
+include_once 'BeanSetup.test';
+
 /**
  * Test specific parts of the bean type class.
  */
 class BeanUnitTests extends BeanSetup {
-
-  /**
-   * Define this test.
-   */
-  public static function getInfo() {
-    return array(
-      'name' => 'Bean Unit Tests',
-      'description' => 'Test that the individual methods of the bean and bean type classes work.',
-      'group' => 'Bean',
-    );
-  }
 
   /**
    * Test the URL of the bean types.

@@ -18,15 +18,15 @@ class BeanMetadataController extends EntityDefaultMetadataController {
       'label' => t('Label'),
       'description' => t('The bean label'),
       'getter callback' => 'entity_property_getter_method',
-      'setter callback' => 'entity_property_verbatim_set',
+      'setter callback' => 'entity_plus_property_verbatim_set',
       'schema field' => 'label',
     );
 
     $properties['title'] = array(
       'label' => t('Title'),
       'description' => t('The bean title'),
-      'getter callback' => 'entity_property_verbatim_get',
-      'setter callback' => 'entity_property_verbatim_set',
+      'getter callback' => 'entity_plus_property_verbatim_get',
+      'setter callback' => 'entity_plus_property_verbatim_set',
       'schema field' => 'title',
       'type' => 'text',
     );
@@ -34,13 +34,13 @@ class BeanMetadataController extends EntityDefaultMetadataController {
     $properties['view_mode'] = array(
       'label' => t('View Mode'),
       'description' => t('View mode of the bean'),
-      'getter callback' => 'entity_property_verbatim_get',
+      'getter callback' => 'entity_plus_property_verbatim_get',
       'schema field' => 'view_mode',
       'required' => TRUE,
     );
 
     $properties['delta'] = array(
-      'getter callback' => 'entity_property_verbatim_get',
+      'getter callback' => 'entity_plus_property_verbatim_get',
       'description' => t('The delta of the block'),
       'label' => t('Block Delta'),
       'required' => TRUE,
@@ -49,8 +49,8 @@ class BeanMetadataController extends EntityDefaultMetadataController {
 
     $properties['type'] = array(
       'type' => 'token',
-      'getter callback' => 'entity_property_verbatim_get',
-      'setter callback' => 'entity_property_verbatim_set',
+      'getter callback' => 'entity_plus_property_verbatim_get',
+      'setter callback' => 'entity_plus_property_verbatim_set',
       'setter permission' => 'administer beans',
       'required' => TRUE,
       'description' => t('The bean type.'),

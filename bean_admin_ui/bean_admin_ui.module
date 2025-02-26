@@ -29,7 +29,7 @@ function bean_admin_ui_menu() {
 
   $items['admin/structure/block-types/add'] = array(
     'title' => 'Add block type',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('bean_admin_ui_type_form'),
     'access arguments' => array('administer bean types'),
     'type' => MENU_LOCAL_ACTION,
@@ -40,7 +40,7 @@ function bean_admin_ui_menu() {
     'title' => 'Edit block type',
     'title arguments' => array(4),
     'title callback' => 'bean_admin_ui_page_title',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('bean_admin_ui_type_form', 4),
     'access arguments' => array('administer bean types'),
     'file' => 'bean_admin_ui.admin.inc',
@@ -92,11 +92,12 @@ function bean_admin_ui_bean_types() {
   $bean_types = bean_admin_ui_get_types();
 
   foreach ($bean_types as $bean_type) {
+    $storage_status = (method_exists($bean_type, 'getStorageStatus')) ? $bean_type->getStorageStatus() : BEAN_STORAGE_NORMAL;
     $plugins[$bean_type->name] = array(
       'label' => $bean_type->label,
       'description' => empty($bean_type->description) ? '' : $bean_type->description,
       'type' => $bean_type->name,
-      'export_status' => $bean_type->type,
+      'storage_status' => $storage_status,
     );
 
     $plugins[$bean_type->name] += _bean_admin_default_plugin();
@@ -109,18 +110,18 @@ function bean_admin_ui_bean_types() {
  * Get all Custom Bean Types
  */
 function bean_admin_ui_get_types() {
-  ctools_include('export');
-  return ctools_export_load_object('bean_type');
+  $config_names = config_get_names_with_prefix('bean.type.');
+  foreach ($config_names as $config_name) {
+    $type = str_replace('bean.type.', '', $config_name);
+    $bundles[$type] = (object) config_get($config_name);
+  }
+  return $bundles;
 }
 
 /**
  * Implements hook_bean_cache_clear().
  */
 function bean_admin_ui_bean_cache_clear() {
-  // Clear ctools cache.
-  ctools_include('export');
-  ctools_export_load_object_reset('bean_type');
-
   // Flush caches.
   cache_clear_all('bean_types', 'cache');
 }
@@ -139,23 +140,9 @@ function _bean_admin_default_plugin() {
       'class' => 'BeanCustom',
       'parent' => 'bean',
       'file' => 'BeanCustom.class.php',
-      'path' => drupal_get_path('module', 'bean_admin_ui') . '/plugins',
+      'path' => backdrop_get_path('module', 'bean_admin_ui') . '/plugins',
     ),
   );
-}
-
-/**
- * Implements hook_features_api().
- */
-function bean_admin_ui_features_api() {
-  static $api = FALSE;
-  if (!$api) {
-    module_load_include('inc', 'features', 'includes/features.ctools');
-    $api = ctools_component_features_api('bean_admin_ui');
-    $api['bean_type']['name'] = 'Bean types';
-    $api['bean_type']['file'] = drupal_get_path('module', 'bean_admin_ui') . '/includes/features.inc';
-  }
-  return $api;
 }
 
 /**
@@ -164,7 +151,7 @@ function bean_admin_ui_features_api() {
 function bean_admin_ui_modules_enabled($modules) {
   $beans_found = FALSE;
   foreach ($modules as $module) {
-    if (function_exists($module .'_bean_types')) {
+    if (function_exists($module . '_bean_types')) {
       $beans_found = TRUE;
     }
   }
@@ -172,4 +159,13 @@ function bean_admin_ui_modules_enabled($modules) {
   if ($beans_found) {
     bean_reset();
   }
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function bean_admin_ui_autoload_info() {
+  return array(
+    'BeanCustom' => 'plugins/BeanCustom.class.php',
+  );
 }

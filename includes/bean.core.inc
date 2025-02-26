@@ -142,6 +142,10 @@ interface BeanTypePluginInterface {
  * The Bean entity class
  */
 class Bean extends Entity {
+  protected $entityInfo; // stores the info provided in hook_entity_info() for this entity.
+  protected $idKey; // Stores the key where the id is stored.
+  protected $nameKey; // Stores the key where the name of the entity is stored.
+
   public $label;
   public $description;
   public $title;
@@ -182,6 +186,44 @@ class Bean extends Entity {
     }
 
     parent::__construct($values, 'bean');
+    $this->entityType = $this->entityType();
+    $this->entityInfo = entity_get_info($this->entityType());
+    $this->idKey = $this->entityInfo['entity keys']['id'];
+    $this->nameKey = $this->entityInfo['entity keys']['name'];
+
+  }
+
+  /**
+   * {@inheritdoc}
+   *
+   * Returns the id of this entity.
+   */
+  public function id() {
+    return isset($this->{$this->nameKey}) ? $this->{$this->nameKey} : NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   *
+   * Since this is a configuration entity, there is no need to provide a uri.
+   * Configuration entities don't have a 'page' for viewing them.
+   */
+  function uri() { }
+
+  /**
+   * Implements EntityInterface::entityType().
+   */
+  public function entityType() {
+    return 'bean';
+  }
+
+  /**
+   * {@inheritdoc}
+   *
+   * Return the human label for this entity.
+   */
+  function label() {
+    return $this->{$this->entityInfo['entity keys']['label']};
   }
 
   public function adminTitle() {
@@ -219,18 +261,21 @@ class Bean extends Entity {
    * Load and set the plugin info.
    * This can be called externally via loadUP()
    */
-  protected  function setPlugin($plugin) {
+  protected function setPlugin($plugin) {
     $this->plugin = $plugin;
 
     return $this;
   }
 
   /**
-   * Set the fields from the defaults and plugin
-   * This can be called externally via loadUP()
+   * Set the fields from the defaults and plugin.
+   * This can be called externally via loadUP() (NOTE: When setFields is called
+   * externally $this->data is already unserialized).
    */
   protected function setFields() {
-    // NOTE: When setFields is called externally $this->data is already unserialized.
+    if (empty($this->data)) {
+      $this->data = array();
+    }
     if (!empty($this->plugin) && !empty($this->type)) {
       $values = is_array($this->data) ? $this->data : unserialize($this->data);
       foreach ($this->plugin->values() as $field => $default) {
@@ -245,14 +290,14 @@ class Bean extends Entity {
    * 'entity_class_uri' as 'uri callback' hook_entity_info().
    */
   protected function defaultUri() {
-    return array('path' => 'block/' . strtolower($this->identifier()));
+    return array('path' => 'block/' . strtolower($this->id()));
   }
 
   /**
-  * Get the default label
-  *
-  * @return string
-  */
+   * Get the default label
+   *
+   * @return string
+   */
   protected function defaultLabel() {
     if (empty($this->title)) {
       return $this->label;
@@ -335,7 +380,7 @@ class Bean extends Entity {
   public function setValues($values) {
     $this->data = array();
     foreach ($this->plugin->values() as $field => $value) {
-      $this->data[$field] = $values[$field];
+      $this->data[$field] = $values['bean']->{$field};
     }
 
     return $this;
@@ -392,16 +437,16 @@ class Bean extends Entity {
   /**
    * Set the delta function
    */
-  protected  function checkDelta() {
+  protected function checkDelta() {
     if (empty($this->delta)) {
       $max_length = 32;
 
       // Base it on the label and make sure it isn't too long for the database.
       if (module_exists('transliteration')) {
-        $delta = drupal_clean_css_identifier(strtolower(transliteration_get($this->label)));
+        $delta = backdrop_clean_css_identifier(strtolower(transliteration_get($this->label)));
       }
       else {
-        $delta = drupal_clean_css_identifier(strtolower($this->label));;
+        $delta = backdrop_clean_css_identifier(strtolower($this->label));
       }
 
       // Add 'bean-' prefix when it's need to avoid a purely numeric delta.
@@ -418,7 +463,7 @@ class Bean extends Entity {
         $original_delta = $this->delta;
         do {
           $unique_suffix = $separator . $i++;
-          $this->delta = substr($original_delta, 0, $max_length - drupal_strlen($unique_suffix)) . $unique_suffix;
+          $this->delta = substr($original_delta, 0, $max_length - backdrop_strlen($unique_suffix)) . $unique_suffix;
         } while ($this->deltaExists($this->delta));
       }
     }
@@ -441,7 +486,7 @@ class Bean extends Entity {
    */
   public function loadRevisions() {
     $this->revisions = db_select('bean_revision', 'br')
-                        ->condition('delta', $this->identifier())
+                        ->condition('delta', $this->id())
                         ->fields('br')
                         ->execute();
 
@@ -449,7 +494,7 @@ class Bean extends Entity {
   }
 }
 
-class BeanEntityAPIController extends EntityAPIControllerExportable {
+class BeanEntityController extends EntityPlusControllerExportable {
   protected function setPlugin(Bean $bean) {
     static $plugins = array();
 
@@ -471,14 +516,16 @@ class BeanEntityAPIController extends EntityAPIControllerExportable {
 
     $deltas = array();
     foreach ($beans as $bean) {
-      if ($bean->internalIdentifier()) {
+      if ($bean->id()) {
         field_attach_delete('bean', $bean);
 
-        $deltas[] = $bean->identifier();
+        $deltas[] = $bean->id();
       }
     }
 
-    if (!empty($deltas)) {
+    // @todo: Shortcutting around this section for now. Is it still required
+    //  in Backdrop, given that custom blocks are now in configuration?
+    if (0 && !empty($deltas)) {
       try {
         // @see block_custom_block_delete_submit()
         if (module_exists('block')) {
@@ -517,7 +564,7 @@ class BeanEntityAPIController extends EntityAPIControllerExportable {
 
     // Invoke rules.
     if (module_exists('rules')) {
-      rules_invoke_event($this->entityType . '_' . $hook, $entity);
+      rules_invoke_event($this->entityType() . '_' . $hook, $entity);
     }
   }
 
@@ -533,4 +580,4 @@ class BeanEntityAPIController extends EntityAPIControllerExportable {
   }
 }
 
-class BeanException extends Exception {};
+class BeanException extends Exception { }

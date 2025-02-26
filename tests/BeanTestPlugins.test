@@ -5,21 +5,12 @@
  * A class for testing the plugin API.
  */
 
+include_once 'BeanSetup.test';
+
 /**
  * Test the plugin API.
  */
 class BeanTestPlugins extends BeanSetup {
-
-  /**
-   * Define this test.
-   */
-  public static function getInfo() {
-    return array(
-      'name' => 'Bean Plugin',
-      'description' => 'Test the bean plugin API.',
-      'group' => 'Bean',
-    );
-  }
 
   /**
    * Test loading of the plugin.
@@ -46,7 +37,7 @@ class BeanTestPlugins extends BeanSetup {
    * Verity that the correct links appear.
    */
   function testBeanTypeLinks() {
-    $this->drupalGet('block/add');
+    $this->backdropGet('block/add');
     // Verify the block add pages exists.
     $this->assertResponse(200, t('Block Add Page is accessible'));
 
@@ -62,7 +53,7 @@ class BeanTestPlugins extends BeanSetup {
    */
   function testBeanTypeForm() {
     foreach (bean_get_types() as $type) {
-      $this->drupalGet("block/add/{$type->buildUrl()}");
+      $this->backdropGet("block/add/{$type->buildUrl()}");
 
       // Verify the core fields are there
       $this->assertFieldById('edit-label', '', t('Label exists on bean add form.'));

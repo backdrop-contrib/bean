@@ -1,6 +1,7 @@
 name = Bean Usage
 description = View Bean (Block Entities) Usage
-core = 7.x
+backdrop = 1.x
+type = module
 dependencies[] = bean
 dependencies[] = blockreference
 package = Bean

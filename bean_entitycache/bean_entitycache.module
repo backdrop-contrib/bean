@@ -24,3 +24,12 @@ function bean_entitycache_entity_info_alter(&$entity_info) {
 function bean_entitycache_flush_caches() {
   return array('cache_entity_bean');
 }
+
+/**
+ * Implements hook_autoload_info().
+ */
+function bean_entitycache_autoload_info() {
+  return array(
+    'BeanEntityCacheAPIController' => 'includes/bean_entitycache.core.inc',
+  );
+}

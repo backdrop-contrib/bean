@@ -11,7 +11,7 @@
 function bean_view_page(Bean $bean) {
   $title = $bean->label() ? $bean->label() : $bean->adminTitle();
   $view_mode = ($bean->view_mode) ? $bean->view_mode : 'default';
-  drupal_set_title($title);
+  backdrop_set_title($title);
 
   return bean_view($bean, $view_mode);
 }
@@ -21,8 +21,8 @@ function bean_view_page(Bean $bean) {
  */
 function bean_edit(Bean $bean) {
   $type = bean_fetch_plugin_info($bean->type);
-  drupal_set_title(t('Edit @type: @title', array('@type' => $type['label'], '@title' => $bean->label)), PASS_THROUGH);
-  return drupal_get_form('bean_form', $bean);
+  backdrop_set_title(t('Edit @type: @title', array('@type' => $type['label'], '@title' => $bean->label)), PASS_THROUGH);
+  return backdrop_get_form('bean_form', $bean);
 }
 
 /**
@@ -31,9 +31,11 @@ function bean_edit(Bean $bean) {
 function bean_add($type) {
   $bean = bean_create(array('type' => $type));
   $bean_type = bean_type_load($type);
-  drupal_set_title(t('Create @type block', array('@type' => $bean_type->getLabel())), PASS_THROUGH);
+  // Testing: add plugin to bean here to avoid error when using ->getForm() later.
+  $bean->loadUp(bean_load_plugin_class($type));
+  backdrop_set_title(t('Create @type block', array('@type' => $bean_type->getLabel())), PASS_THROUGH);
 
-  return drupal_get_form('bean_form', $bean, $type);
+  return backdrop_get_form('bean_form', $bean, $type);
 }
 
 /**
@@ -44,118 +46,23 @@ function bean_add_page() {
 
   $types = array();
   foreach ($bean_types as $key => $bean_type) {
-    if (entity_access('create', 'bean', $bean_type->type)) {
+    if (entity_plus_access('create', 'bean', $bean_type->type)) {
       $types[$key] = $bean_type;
     }
   }
 
   // If there are block types, but the user doesn't have access, return 403.
   if (count($types) == 0 && count($bean_types) > 0) {
-    return drupal_access_denied();
+    return backdrop_access_denied();
   }
 
   // Bypass the block/add listing if only one block type is available.
   if (count($types) == 1) {
     $bean_type = array_shift($types);
-    drupal_goto('block/add/' . $bean_type->buildURL());
+    backdrop_goto('block/add/' . $bean_type->buildURL());
   }
 
   return theme('bean_add_list', array('content' => $types));
-}
-
-function bean_list() {
-  $rows = array();
-
-  // Build the sortable table header.
-  $header = array(
-    'label' => array(
-      'data' => 'Label',
-      'type' => 'property',
-      'specifier' => 'label',
-      'sort' => 'asc'
-    ),
-    'type' => array(
-      'data' => 'Type',
-      'type' => 'entity',
-      'specifier' => 'bundle',
-    ),
-    'operations' => array('data' => t('Operations')),
-  );
-
-  $filters = bean_get_filter();
-
-
-  $query = new EntityFieldQuery();
-  $query->entityCondition('entity_type', 'bean')
-    ->tableSort($header)
-    ->pager($filters['per_page']);
-
-  if (!empty($filters['types'])) {
-    $query->entityCondition('bundle', $filters['types'], 'IN');
-  }
-
-  $result = $query->execute();
-  if (!empty($result)) {
-    $beans = bean_load_multiple(array_keys($result['bean']));
-  }
-  else {
-    $beans = array();
-  }
-
-  foreach ($beans as $bean) {
-    $rows[$bean->bid] = array(
-      'label' => array(
-        'data' => array(
-          '#type' => 'link',
-          '#title' => $bean->label,
-          '#href' => 'block/' . $bean->delta,
-        ),
-      ),
-      'type' => check_plain($bean->type),
-    );
-
-    $destination = drupal_get_destination();
-
-    // Build a list of all the accessible operations for the current bean.
-    $operations = array();
-    if (entity_access('update', 'bean', $bean)) {
-      $operations['edit'] = array(
-        'title' => t('edit'),
-        'href' => 'block/' . $bean->delta . '/edit',
-        'query' => $destination,
-      );
-    }
-    if (entity_access('delete', 'bean', $bean)) {
-      $operations['delete'] = array(
-        'title' => t('delete'),
-        'href' => 'block/' . $bean->delta . '/delete',
-        'query' => $destination,
-      );
-    }
-    // Render an unordered list of operations links.
-    $rows[$bean->bid]['operations'] = array(
-      'data' => array(
-        '#theme' => 'links__bean_operations',
-        '#links' => $operations,
-        '#attributes' => array('class' => array('links', 'inline')),
-      ),
-    );
-  }
-
-  $output = array(
-    'bean_filter_form' => drupal_get_form('bean_filter_form'),
-    'bean_content' => array(
-      '#theme' => 'table',
-      '#header' => $header,
-      '#rows' => $rows,
-      '#empty' => t('There are no Block Available'),
-    ),
-    'pager' => array(
-      '#theme' => 'pager',
-    ),
-  );
-
-  return $output;
 }
 
 /**
@@ -192,7 +99,7 @@ function theme_bean_add_list($variables) {
 /**
  * Bean form
  */
-function bean_form($form, &$form_state, Bean $bean, $type = NULL) {
+function bean_form($form, &$form_state, Bean $bean, string $type = NULL) {
 
   // During initial form build, add the bean entity to the form state for use
   // during form building and processing. During a rebuild, use what is in the
@@ -239,9 +146,6 @@ function bean_form($form, &$form_state, Bean $bean, $type = NULL) {
     $form['revision']['#access'] = FALSE;
   }
 
-  ctools_include('dependent');
-  ctools_add_js('dependent');
-
   $form['revision']['is_new_revision'] = array(
     '#type' => 'checkbox',
     '#title' => t('Create new revision'),
@@ -259,7 +163,7 @@ function bean_form($form, &$form_state, Bean $bean, $type = NULL) {
     $form['revision']['default_revision'] = array(
       '#type' => 'checkbox',
       '#title' => t('Set Revision as default'),
-      '#default_value' => $bean->isDefaultRevision(),
+      '#default_value' => $bean->isActiveRevision(),
       '#states' => array(
         // Hide if the option above is disabled, to avoid potential dataloss.
         'invisible' => array(
@@ -279,7 +183,8 @@ function bean_form($form, &$form_state, Bean $bean, $type = NULL) {
 
   // The view mode.
   if (user_access('edit bean view mode')) {
-    $bean_info = $bean->entityInfo();
+    // $bean_info = $bean->entityInfo();
+    $bean_info = entity_get_info('bean');
     foreach ($bean_info['view modes'] as $view_mode_name => $data) {
       $view_modes[$view_mode_name] = $data['label'];
     }
@@ -317,7 +222,7 @@ function bean_form($form, &$form_state, Bean $bean, $type = NULL) {
     '#weight' => 0,
     '#submit' => array('bean_form_submit'),
   );
-  if (!empty($bean->bid) && entity_access('delete', 'bean', $bean)) {
+  if (!empty($bean->bid) && entity_plus_access('delete', 'bean', $bean)) {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
@@ -332,7 +237,7 @@ function bean_form($form, &$form_state, Bean $bean, $type = NULL) {
   }
   $form += array('#submit' => array());
 
-  if(function_exists('entity_language')){
+  if (function_exists('entity_language')) {
     $langcode = entity_language('bean', $bean);
   }
   else {
@@ -364,7 +269,7 @@ function bean_form_validate($form, &$form_state) {
     $bean->log = $form_state['values']['log'];
   }
 
-  if(function_exists('entity_language')){
+  if (function_exists('entity_language')) {
     $langcode = entity_language('bean', $bean);
   }
   else {
@@ -389,30 +294,36 @@ function bean_form_submit($form, &$form_state) {
     $bean->default_revision = TRUE;
   }
 
-  $insert = $bean->internalIdentifier();
+  $insert = $bean->id();
   field_attach_submit('bean', $bean, $form, $form_state);
   $bean->save();
   $form_state['values']['bean'] = $bean;
 
-  $watchdog_args = array('@type' => $bean->type, '%title' => $bean->label());
-  $t_args = array('@type' => $bean->typeName(), '%title' => $bean->label());
+  $watchdog_args = array(
+    '@type' => $bean->type,
+    '%title' => $bean->label(),
+  );
+  $t_args = array(
+    '@type' => $bean->typeName(),
+    '%title' => $bean->label(),
+  );
 
   if (!$insert) {
     watchdog('bean', '@type: added %title.', $watchdog_args, WATCHDOG_NOTICE, $bean->viewURL());
-    drupal_set_message(t('@type %title has been created.', $t_args));
+    backdrop_set_message(t('@type %title has been created.', $t_args));
   }
   else {
     watchdog('bean', '@type: updated %title.', $watchdog_args, WATCHDOG_NOTICE, $bean->viewURL());
-    drupal_set_message(t('@type %title has been updated.', $t_args));
+    backdrop_set_message(t('@type %title has been updated.', $t_args));
   }
 
-  if ($bean->identifier()) {
+  if ($bean->id()) {
     $form_state['redirect'] = $bean->viewURL();
   }
   else {
     // In the unlikely case something went wrong on save, the bean will be
     // rebuilt and bean form redisplayed the same way as in preview.
-    drupal_set_message(t('The block could not be saved.'), 'error');
+    backdrop_set_message(t('The block could not be saved.'), 'error');
     $form_state['rebuild'] = TRUE;
   }
 }
@@ -434,12 +345,12 @@ function bean_form_submit($form, &$form_state) {
 function bean_form_submit_build_bean($form, &$form_state) {
 
   // @todo Legacy support for modules that extend the bean form with form-level
-  //   submit handlers that adjust $form_state['values'] prior to those values
-  //   being used to update the entity. Module authors are encouraged to instead
-  //   adjust the bean directly within a hook_bean_submit() implementation. For
-  //   Drupal 8, evaluate whether the pattern of triggering form-level submit
-  //   handlers during button-level submit processing is worth supporting
-  //   properly, and if so, add a Form API function for doing so.
+//   submit handlers that adjust $form_state['values'] prior to those values
+//   being used to update the entity. Module authors are encouraged to instead
+//   adjust the bean directly within a hook_bean_submit() implementation. For
+//   Backdrop 8, evaluate whether the pattern of triggering form-level submit
+//   handlers during button-level submit processing is worth supporting
+//   properly, and if so, add a Form API function for doing so.
   unset($form_state['submit_handlers']);
   form_execute_handlers('submit', $form, $form_state);
 
@@ -459,7 +370,7 @@ function bean_form_submit_build_bean($form, &$form_state) {
 function bean_form_delete_submit($form, &$form_state) {
   $destination = array();
   if (isset($_GET['destination'])) {
-    $destination = drupal_get_destination();
+    $destination = backdrop_get_destination();
     unset($_GET['destination']);
   }
   $bean = $form_state['values']['bean'];
@@ -489,7 +400,7 @@ function bean_delete_confirm_submit($form, &$form_state) {
     $bean = $form['#bean'];
     $bean->delete();
     watchdog('bean', '@type: deleted %title.', array('@type' => $bean->typeName(), '%title' => $bean->label()));
-    drupal_set_message(t('@type %title has been deleted.', array('@type' => $bean->typeName(), '%title' => $bean->label())));
+    backdrop_set_message(t('@type %title has been deleted.', array('@type' => $bean->typeName(), '%title' => $bean->label())));
   }
 
   $form_state['redirect'] = '<front>';
@@ -518,7 +429,7 @@ function bean_delete_revision_confirm_submit($form, &$form_state) {
     $bean = $form['#bean'];
     bean_delete_revision($bean->vid);
     watchdog('bean', '@type: deleted %title revision %vid.', array('%vid' => $bean->vid, '@type' => $bean->typeName(), '%title' => $bean->label()));
-    drupal_set_message(t('@type %title revision %vid has been deleted.', array('%vid' => $bean->vid, '@type' => $bean->typeName(), '%title' => $bean->label())));
+    backdrop_set_message(t('@type %title revision %vid has been deleted.', array('%vid' => $bean->vid, '@type' => $bean->typeName(), '%title' => $bean->label())));
   }
 }
 
@@ -545,10 +456,14 @@ function bean_set_default_confirm_submit($form, &$form_state) {
     $bean = $form['#bean'];
     $bean->setDefault()->save();
     watchdog('bean', '@type: %title revision %vid was set active.', array('%vid' => $bean->vid, '@type' => $bean->typeName(), '%title' => $bean->label()));
-    drupal_set_message(t('@type %title revision %vid has been set active.', array('%vid' => $bean->vid, '@type' => $bean->typeName(), '%title' => $bean->label())));
+    backdrop_set_message(t('@type %title revision %vid has been set active.', array('%vid' => $bean->vid, '@type' => $bean->typeName(), '%title' => $bean->label())));
   }
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function bean_filter_form($form, &$form_state) {
   $filters = bean_get_filter();
 
@@ -578,7 +493,13 @@ function bean_filter_form($form, &$form_state) {
     '#type' => 'select',
     '#title' => t('Items Per Page'),
     '#multiple' => FALSE,
-    '#options' => array(20 => '20', 50 => '50', 100 => '100', 200 => '200', 500 => '500'),
+    '#options' => array(
+      20 => '20',
+      50 => '50',
+      100 => '100',
+      200 => '200',
+      500 => '500',
+    ),
     '#default_value' => $filters['per_page'],
   );
 
@@ -607,14 +528,18 @@ function bean_filter_submit($form, &$form_state) {
 
   bean_set_filter($filters);
 
-  drupal_goto('admin/content/blocks');
+  backdrop_goto('admin/content/blocks');
 
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function bean_reset_filter_submit($form, &$form_state) {
   bean_reset_filter();
 
-  drupal_goto('admin/content/blocks');
+  backdrop_goto('admin/content/blocks');
 }
 
 /**
@@ -655,23 +580,20 @@ function bean_revisions_page(Bean $bean) {
     'title' => array('data' => t('Title')),
     'author' => array('data' => t('Author')),
     'changed' => array('data' => t('Date Changed')),
-    'operations' => array(
-      'data' => t('Operations'),
-      'colspan' => 2,
-    ),
+    'operations' => array('data' => t('Operations')),
   );
 
   $rows = array();
 
   // Dont' show link for default revision
-  $can_delete = entity_access('delete', 'bean', $bean);
-  $can_edit = entity_access('update', 'bean', $bean);
+  $can_delete = entity_plus_access('delete', 'bean', $bean);
+  $can_edit = entity_plus_access('update', 'bean', $bean);
 
   foreach ($bean->revisions as $rev) {
-    $active = $rev->vid == $bean->vid ? TRUE : FALSE;
+    $active = $rev->vid == $bean->vid?TRUE : FALSE;
     $user = user_load($rev->uid);
     $rows[$rev->vid]  = array(
-      'vid' => $active ? t('@label (Current Revision)', array('@label' => $rev->vid)) : $rev->vid,
+      'vid' => $active?t('@label (Current Revision)', array('@label' => $rev->vid)) : $rev->vid,
       'title' => array(
         'data' => array(
           '#type' => 'link',
@@ -679,7 +601,7 @@ function bean_revisions_page(Bean $bean) {
           '#href' => "block/{$rev->delta}/revisions/{$rev->vid}",
         ),
       ),
-      'author' => format_username($user),
+      'author' => user_format_name($user),
       'changed' => format_date($rev->changed),
     );
 
@@ -687,33 +609,32 @@ function bean_revisions_page(Bean $bean) {
 
     if ($can_edit) {
       $operations['edit'] = array(
-        'title' => t('edit'),
+        'title' => t('Edit'),
         'href' => "block/{$bean->delta}/revisions/{$rev->vid}/edit",
-        'query' => drupal_get_destination(),
+        'query' => backdrop_get_destination(),
       );
     }
 
     if ($can_delete && !$active) {
       $operations['delete'] = array(
-        'title' => t('delete'),
+        'title' => t('Delete'),
         'href' => "block/{$bean->delta}/revisions/{$rev->vid}/delete",
-        'query' => drupal_get_destination(),
+        'query' => backdrop_get_destination(),
       );
     }
 
     if ($can_edit && !$active) {
       $operations['set-active'] = array(
-        'title' => t('set active'),
+        'title' => t('Set active'),
         'href' => "block/{$bean->delta}/revisions/{$rev->vid}/set-active",
-        'query' => drupal_get_destination(),
+        'query' => backdrop_get_destination(),
       );
     }
 
     $rows[$rev->vid]['operations'] = array(
       'data' => array(
-        '#theme' => 'links__bean_operations',
+        '#type' => 'dropbutton',
         '#links' => $operations,
-        '#attributes' => array('class' => array('links', 'inline')),
       ),
     );
   }

@@ -7,7 +7,7 @@
  */
 
 /**
- * Implements hook_menu()
+ * Implements hook_menu().
  *
  * @return array
  */
@@ -42,14 +42,14 @@ function bean_usage_menu() {
     'page callback' => 'bean_usage_output',
     'page arguments' => array(5),
     'access arguments' => array('view bean usage'),
-    'type' => MENU_DEFAULT_LOCAL_TASK
+    'type' => MENU_DEFAULT_LOCAL_TASK,
   );
 
   $items['admin/reports/bean/usage/settings'] = array(
     'title' => t('Settings'),
     'description' => t('Displays a list of Beans (blockreferences) and where they are used.'),
     'weight' => 1,
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('bean_usage_settings'),
     'access arguments' => array('administer bean usage'),
     'file' => 'includes/bean_usage.forms.inc',
@@ -60,7 +60,7 @@ function bean_usage_menu() {
 }
 
 /**
- * Implements hook_permission()
+ * Implements hook_permission().
  *
  * @return array
  */
@@ -84,6 +84,17 @@ function bean_usage_permission() {
  */
 
 /**
+ * Implements hook_config_info().
+ */
+function bean_usage_config_info() {
+  $prefixes['bean_usage.settings'] = array(
+    'label' => t('Bean settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+
+/**
  * Displays a table of Beans and their usage
  *
  * @return string - the HTML for the table
@@ -93,17 +104,18 @@ function bean_usage_output($bean = NULL) {
   $output = '';
   $bean_delta = NULL;
   $delta_specific = $delta_found = FALSE;
-  $bean_usage_form = drupal_get_form('bean_usage_filters');
+  $bean_usage_form = backdrop_get_form('bean_usage_filters');
 
   if (!empty($bean) && is_object($bean)) {
     $delta_specific = TRUE;
-  } else if (is_numeric($bean)) {
+  }
+  else if (is_numeric($bean)) {
     $delta_specific = TRUE;
     $bean = bean_load($bean);
   }
 
   if (is_object($bean)) {
-    drupal_set_title($bean->label . ' Usage');
+    backdrop_set_title($bean->label . ' Usage');
     $bean_delta = $bean->delta;
   }
 
@@ -112,7 +124,7 @@ function bean_usage_output($bean = NULL) {
 
   // If we have something to work with
   if (!empty($fields)) {
-    $filters = drupal_get_query_parameters();
+    $filters = backdrop_get_query_parameters();
 
     if ($delta_specific) {
       $delta_found = FALSE;
@@ -122,7 +134,7 @@ function bean_usage_output($bean = NULL) {
     $bundles = bean_usage_blockreference_bundles();
 
     $query = '';
-    foreach($fields as $i => $field) {
+    foreach ($fields as $i => $field) {
       if (!$delta_found) {
         $field_name = $field->name;
         $data_table = 'field_data_' . $field_name;
@@ -171,7 +183,7 @@ function bean_usage_output($bean = NULL) {
             $entity_title = _bean_usage_entity_display('node', $bean_data->entity_id, 'nid', 'title');
             break;
 
-          // If its a user, get the user name
+            // If its a user, get the user name
           case 'user':
             $entity_title = _bean_usage_entity_display('user', $bean_data->entity_id, 'uid', 'name');
             break;
@@ -191,14 +203,14 @@ function bean_usage_output($bean = NULL) {
     // If we have any usage data create and display the table of data
     if (!empty($content)) {
       $rows = count($content);
-      $results_per_page = variable_get('bean_usage_results_per_page', 30);
+      $results_per_page = config_get('bean_usage.settings', 'bean_usage_results_per_page');
       // set up pager variables
       pager_default_initialize($rows, $results_per_page, $element = 0);
 
       // Set up output table
       $bean_table_data = array(
-        'attributes' => array( // set table attributes
-          'width' => '100%' // width
+        'attributes' => array(// set table attributes
+          'width' => '100%', // width
         ),
         'header' => _bean_usage_table_headers($bean_delta),
         'rows' => array(), // table rows
@@ -272,7 +284,7 @@ function bean_usage_output($bean = NULL) {
                 3 => array(
                   'data' => $text_prefix . l($entity['entity_title'], $link_prefix . $entity['entity_id']),
                   'width' => '30%',
-                  'no_striping' => TRUE
+                  'no_striping' => TRUE,
                 ),
               );
             } // if (!empty($bean_label_cell))
@@ -282,11 +294,11 @@ function bean_usage_output($bean = NULL) {
                   t($entity['entity_title']),
                   $link_prefix . $entity['entity_id'],
                   array(
-                    'attributes' => array(
-                      'title'  => $entity['entity_title'],
-                      'target' => '_blank'
-                    ),
-                  )
+                  'attributes' => array(
+                    'title' => $entity['entity_title'],
+                    'target' => '_blank',
+                  ),
+                )
                 ),
               );
             } // else
@@ -297,7 +309,7 @@ function bean_usage_output($bean = NULL) {
       } // foreach ($usage)
       // Set the output using theme_table with the header and rows created above
       if (!$delta_specific) {
-        $output .= drupal_render($bean_usage_form);
+        $output .= backdrop_render($bean_usage_form);
       }
       $output .= theme('table', $bean_table_data);
       $output .= theme('pager');
@@ -308,7 +320,7 @@ function bean_usage_output($bean = NULL) {
       }
       else {
         $output .= $bean_usage_form;
-        $output .= 'There is no bean usage to report for '. $filters;
+        $output .= 'There is no bean usage to report for ' . $filters;
       }
     } // else
   } // if (!empty($fields))
@@ -323,7 +335,7 @@ function bean_usage_output($bean = NULL) {
  * @return mixed
  */
 function bean_usage_blockreference_fields() {
-  $fields = &drupal_static(__FUNCTION__);
+  $fields = &backdrop_static(__FUNCTION__);
 
   if (!isset($fields)) {
     $query = db_select('field_config', 'fc');
@@ -348,13 +360,13 @@ function bean_usage_blockrefence_entity_types() {
   $entity_types = array();
 
   $et_query = db_select('field_config_instance', 'fci')->distinct();
-  $et_query->addField('fci', 'entity_type',  'type');
+  $et_query->addField('fci', 'entity_type',   'type');
   $et_query->join('field_config', 'fc', 'fc.field_name = fci.field_name');
   $et_res = $et_query->condition('fc.type', 'blockreference')
     ->execute()
     ->fetchAll(0);
 
-  foreach($et_res as $entity) {
+  foreach ($et_res as $entity) {
     $entity_types[] = $entity->type;
   }
 
@@ -376,7 +388,7 @@ function bean_usage_blockreference_bundles() {
     ->execute()
     ->fetchAll(0);
 
-  foreach($b_res as $bundle) {
+  foreach ($b_res as $bundle) {
     $bundles[] = $bundle->bundle;
   }
 
@@ -417,24 +429,24 @@ function _bean_usage_entity_display($table, $value, $key, $column) {
  * @return SelectQuery
  */
 function _bean_usage_field_data( $data_table, $i, $field_name, $entity_types, $bundles, $filters = NULL, $delta_specific = FALSE, $bean = NULL) {
-  $query = db_select($data_table, 'fd'. $i);
-  $query->leftJoin('block', 'bl', 'fd'. $i . '.' . $field_name . '_bid = bl.bid');
+  $query = db_select($data_table, 'fd' . $i);
+  $query->leftJoin('block', 'bl', 'fd' . $i . '.' . $field_name . '_bid = bl.bid');
   $query->join('bean', 'b', 'b.delta = bl.delta');
   $query->fields('b', array('bid', 'label', 'title', 'type'));
-  $query->fields('fd'. $i, array('entity_id', 'delta', 'entity_type'));
-  $query->addField('fd'. $i, $field_name . '_bid', 'bid');
+  $query->fields('fd' . $i, array('entity_id', 'delta', 'entity_type'));
+  $query->addField('fd' . $i, $field_name . '_bid', 'bid');
   $query_and = db_and();
   $query_and->condition('bl.module', 'bean');
-  $query_and->condition('bl.theme', variable_get('theme_default', NULL));
-  $query_and->condition('fd'. $i . '.entity_type', $entity_types, 'IN');
-  $query_and->condition('fd'. $i . '.bundle', $bundles, 'IN');
+  $query_and->condition('bl.theme', config_get('system.performance', 'theme_default'));
+  $query_and->condition('fd' . $i . '.entity_type', $entity_types, 'IN');
+  $query_and->condition('fd' . $i . '.bundle', $bundles, 'IN');
 
   if (!empty($filters['type'])) {
     $query_and->condition('b.type', array($filters['type']), 'IN');
   }
 
   if (!empty($filters['title'])) {
-    $query_and->condition('b.title', ('%' .$filters['title'] . '%'), 'LIKE');
+    $query_and->condition('b.title', ('%' . $filters['title'] . '%'), 'LIKE');
   }
 
   if (!empty($filters['label'])) {
@@ -462,7 +474,7 @@ function _bean_usage_table_headers($bean_delta = NULL) {
       0 => array(
         'data' => t('Bean label'),
         'field' => 'label',
-        'sort' => 'asc'
+        'sort' => 'asc',
       ),
       1 => array(
         'data' => t('Bean title'),

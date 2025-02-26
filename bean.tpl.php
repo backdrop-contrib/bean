@@ -11,29 +11,25 @@
  * - $title: The (sanitized) entity label.
  * - $url: Direct url of the current entity if specified.
  * - $page: Flag for the full page state.
- * - $classes: String of classes that can be used to style contextually through
+ * - $classes: Array of classes that can be used to style contextually through
  *   CSS. It can be manipulated through the variable $classes_array from
  *   preprocess functions. By default the following classes are available, where
  *   the parts enclosed by {} are replaced by the appropriate values:
  *   - entity-{ENTITY_TYPE}
  *   - {ENTITY_TYPE}-{BUNDLE}
  *
- * Other variables:
- * - $classes_array: Array of html class attribute values. It is flattened
- *   into a string within the variable $classes.
- *
  * @see template_preprocess()
  * @see template_preprocess_entity()
  * @see template_process()
  */
 ?>
-<div class="<?php print $classes; ?> clearfix"<?php print $attributes; ?>>
+<div class="<?php print implode(' ', $classes); ?> clearfix"<?php print backdrop_attributes($attributes); ?>>
   <?php print render($title_prefix); ?>
   <?php if (!empty($bean->title)): ?>
-    <h2<?php print $title_attributes; ?>><?php print $bean->title ?></h2>
+    <h2<?php (empty($title_attributes)) ? '' : print backdrop_attributes($title_attributes); ?>><?php print $bean->title ?></h2>
   <?php endif;?>
   <?php print render($title_suffix); ?>
-  <div class="content"<?php print $content_attributes; ?>>
+  <div class="content"<?php print backdrop_attributes($content_attributes); ?>>
     <?php
       print render($content);
     ?>

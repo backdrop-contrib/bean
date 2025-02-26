@@ -11,58 +11,83 @@
 function bean_admin_ui_admin_page() {
   $field_ui = module_exists('field_ui');
   $rows = array();
+  $operations = array();
   $i = 0;
 
   foreach (bean_get_types() as $bean_type) {
     $row = array();
-    $row[] = array('data' => check_plain($bean_type->getLabel()));
-    if (method_exists($bean_type, 'getExportStatus')) {
-      $export_status = $bean_type->getExportStatus();
-    }
-    else {
-      $export_status = t('Normal');
-    }
-    $row[] = array('data' => $export_status);
-    // Edit and delete buttons
+    $row['type'] = array(
+      'data' => theme('label_machine_name__bean_type', array(
+        'label' => check_plain($bean_type->getLabel()),
+        'machine_name' => $bean_type->type,
+      )),
+    );
+    $row['description'] = array(
+      'data' => filter_xss_admin($bean_type->getDescription()),
+    );
+    $storage_status_label = (method_exists($bean_type, 'getStorageStatusLabel')) ? $bean_type->getStorageStatusLabel() : t('Unknown');
+    $row['status'] = array('data' => $storage_status_label);
+    // Edit and delete buttons.
     if ($bean_type->isEditable()) {
-      $row[] = array('data' => l(t('Edit'), 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/edit'));
-      switch ($export_status) {
-        case t('Normal'):
-          $row[] = array('data' => l(t('Delete'), 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/delete'));
+      $operations['edit'] = array(
+        'title' => t('Edit'),
+        'href' => 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/edit',
+      );
+      $storage_status_code = (method_exists($bean_type, 'getStorageStatus')) ? $bean_type->getStorageStatus() : BEAN_STORAGE_NORMAL;
+      switch ($storage_status_code) {
+        case BEAN_STORAGE_NORMAL:
+          $operations['delete'] = array(
+            'title' => t('Delete'),
+            'href' => 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/delete',
+          );
           break;
-        case t('Overridden'):
-          $row[] = array('data' => l(t('Revert'), 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/revert'));
+        case BEAN_STORAGE_OVERRIDE:
+          $operations['revert'] = array(
+            'title' => t('Revert'),
+            'href' => 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/revert',
+          );
           break;
-        case t('Default'):
-          $row[] = array();
+        case BEAN_STORAGE_DEFAULT:
           break;
       }
-    }
-    else {
-      // For the operations
-      $row[] = array();
-      $row[] = array();
     }
 
     if ($field_ui) {
       // Manage fields.
-      $row[] = array('data' => l(t('manage fields'), 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/fields'));
+      $operations['manage_fields'] = array(
+        'title' => t('Manage fields'),
+        'href' => 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/fields',
+      );
 
       // Display fields.
-      $row[] = array('data' => l(t('manage display'), 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/display'));
+      $operations['manage_display'] = array(
+        'title' => t('Manage display'),
+        'href' => 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/display',
+      );
     }
-    //creative way to setup sorting rows; add number to prevent dual keys
+    $row['operations'] = array(
+      'data' => array(
+        '#type' => 'dropbutton',
+        '#links' => $operations,
+      ),
+    );
+    // Creative way to setup sorting rows; add number to prevent dual keys.
     $rows[str_replace(' ', '', $bean_type->getLabel()) . '_' . $i] = $row;
   }
   ksort($rows);
 
-  $header = array(t('Name'), t('Status'), array('data' => t('Operations'), 'colspan' => $field_ui ? '4' : '2'));
+  $header = array(
+    t('Name'),
+    t('Description'),
+    t('Status'),
+    t('Operations'),
+  );
 
   $build['bean_table'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#empty' => t('There are no Block Types Available'),
+    '#empty' => t('There are no Block types available.'),
   );
   return $build;
 }
@@ -82,7 +107,7 @@ function bean_admin_ui_type_form($form, &$form_state, $bean_type = NULL) {
 
     $bean_type = new BeanCustom($plugin_info);
   }
-  elseif (!method_exists($bean_type, 'getExportStatus') || $bean_type->getExportStatus() == 'Normal') {
+  elseif (!method_exists($bean_type, 'getStorageStatus') || $bean_type->getStorageStatus() == 'Normal') {
     $form['new'] = array(
       '#type' => 'value',
       '#value' => FALSE,
@@ -92,7 +117,7 @@ function bean_admin_ui_type_form($form, &$form_state, $bean_type = NULL) {
   $disabled = !$bean_type->isEditable();
 
   if ($disabled) {
-    drupal_set_message(t('This Block Type can not be edited'));
+    backdrop_set_message(t('This Block Type can not be edited'));
   }
   $form['bean_type'] = array(
     '#type' => 'value',
@@ -149,8 +174,8 @@ function bean_admin_ui_type_form($form, &$form_state, $bean_type = NULL) {
       '#disabled' => $disabled,
     );
 
-    if (method_exists($bean_type, 'getExportStatus')) {
-      if ($bean_type->getExportStatus() == 'Overridden') {
+    if (method_exists($bean_type, 'getStorageStatus')) {
+      if ($bean_type->getStorageStatus() == 'Overridden') {
         $form['actions']['delete']['#name'] = 'revert';
         $form['actions']['delete']['#value'] = t('Revert to defaults');
       }
@@ -171,32 +196,43 @@ function bean_admin_ui_type_form_submit(&$form, &$form_state) {
   if (in_array($op, array('revert', 'delete'))) {
     $form_state['redirect'] = 'admin/structure/block-types/manage/' . $form['bean_type']['#value']->type . '/' . $op;
   }
-  $bean_type = $form_state['values']['bean_type'];
-  $bean_type->type = $form_state['values']['name'];
-  $bean_type->setLabel($form_state['values']['label']);
-  $bean_type->setDescription($form_state['values']['description']);
-  $bean_type->save($form_state['values']['new']);
-  $form_state['redirect'] = 'admin/structure/block-types';
-  ctools_include('export');
+  else {
+    $form_state['redirect'] = 'admin/structure/block-types';
+    backdrop_set_message(t('The block type has been saved.'));
+  }
+  $config = config('bean.type.' . $form_state['values']['name']);
+  $config->set('name', $form_state['values']['name']);
+  $config->set('label', $form_state['values']['label']);
+  $config->set('description', $form_state['values']['description']);
+  $config->save();
 
   // Clear the site caches so that the new "manage fields" and "display fields"
   // pages for the new bean type work.
-  drupal_flush_all_caches();
+  backdrop_flush_all_caches();
 }
 
 /**
  * Menu callback; Form builder to confirm delete/revert of a bean type.
  */
 function bean_admin_ui_type_op_confirm($form, &$form_state, $op, $type) {
-  $form['op'] = array('#type' => 'value', '#value' => $op);
-  $form['type'] = array('#type' => 'value', '#value' => $type);
-  $form['name'] = array('#type' => 'value', '#value' => $type->getLabel());
+  $form['op'] = array(
+    '#type' => 'value',
+    '#value' => $op,
+  );
+  $form['type'] = array(
+    '#type' => 'value',
+    '#value' => $type,
+  );
+  $form['name'] = array(
+    '#type' => 'value',
+    '#value' => $type->getLabel(),
+  );
   $caption = '';
   if ($op == 'delete') {
     $message = t('Are you sure you want to delete the block type %type?', array('%type' => $type->getLabel()));
     $num_beans = db_query("SELECT COUNT(*) FROM {bean} WHERE type = :type", array(':type' => $type->type))->fetchField();
     if ($num_beans) {
-      $caption .= '<p>' . format_plural($num_beans, '%type is used by 1 block on your site that is going to be removed along with %type.', '%type is used by @count blocks on your site that are going to be removed along %type.', array('%type' => $type->getLabel())) . '</p>';
+      $caption .= '<p>' . format_plural($num_beans, '%type is used by 1 block on your site, which will be broken when this is removed.', '%type is used by @count blocks on your site, which will be broken when this is removed', array('%type' => $type->getLabel())) . '</p>';
     }
     $action = t('Delete');
   }
@@ -209,6 +245,10 @@ function bean_admin_ui_type_op_confirm($form, &$form_state, $op, $type) {
   return confirm_form($form, $message, 'admin/structure/block-types', $caption, $action);
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function bean_admin_ui_type_op_confirm_submit($form, &$form_state) {
   $form_state['values']['type']->{$form['op']['#value']}();
   $form_state['redirect'] = 'admin/structure/block-types';
