@@ -1,0 +1,25 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the bean_usage module.
+ *
+ */
+
+
+/**
+ * Migrate bean_usage variables to config.
+ */
+function bean_usage_update_1000() {
+  $config = config('bean_usage.settings');
+  $config->set('bean_usage_results_per_page', update_variable_get('bean_usage_results_per_page', '30'));
+  $config->save();
+
+  update_variable_del('bean_usage_results_per_page');
+}
+
+/**
+ * Implements hook_install().
+ */
+function bean_usage_install() {
+  // Dynamically generated variable data was detected.
+}

@@ -1,8 +1,7 @@
 name = Bean Test
 description = Creates test plugins for bean
-core = 7.x
+backdrop = 1.x
+type = module
 
 dependencies[] = bean
-files[] = bean_test.module
-
 hidden = TRUE

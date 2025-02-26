@@ -1,6 +1,7 @@
 name = Bean UUID
 description = Allow deploying bean blocks through Deploy and UUID modules.
-core = 7.x
+backdrop = 1.x
+type = module
 
 dependencies[] = bean
 dependencies[] = uuid

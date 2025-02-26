@@ -1,0 +1,18 @@
+[BeanTestPlugins]
+name = Bean Plugin
+description = Test the bean plugin API.
+group = Bean
+file = BeanTestPlugins.test
+
+[BeanTests]
+name = Bean functionality
+description = Test the bean API.
+group = Bean
+file = BeanTests.test
+
+[BeanUnitTests]
+name = Bean Unit Tests
+description = Test that the individual methods of the bean and bean type classes work.
+group = Bean
+file = BeanUnitTests.test
+

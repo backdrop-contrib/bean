@@ -102,8 +102,8 @@ abstract class BeanPlugin implements BeanTypePluginInterface {
    */
   public function view($bean, $content, $view_mode = 'default', $langcode = NULL) {
     if (!empty($content) && module_exists('contextual')) {
-      $content['bean'][$bean->Identifier()]['#contextual_links']['bean'] = array(
-        'block', array($bean->Identifier(), 'edit')
+      $content['#contextual_links']['bean'] = array(
+        'block', array($bean->id(), 'edit')
       );
     }
     return $content;

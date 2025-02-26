@@ -1,8 +1,10 @@
 name = Bean Admin UI
 description = Add the ability to create Block Types in the UI
-core = 7.x
-files[] = bean_admin_ui.module
-dependencies[] = bean
-files[] = plugins/BeanCustom.class.php
+backdrop = 1.x
+type = module
 configure = admin/structure/block-types
 package = Bean
+
+dependencies[] = bean
+
+stylesheets[all][] = css/bean_admin_ui.css

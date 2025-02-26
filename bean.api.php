@@ -17,7 +17,7 @@ function hook_bean_types_api_info() {
 /**
  * Implements hook_bean_types().
  *
- * Beans uses ctools plugins to define the block types.
+ * Beans uses plugins to define the block types.
  * All plugin files must be registered in the .info file.
  */
 function hook_bean_types() {
@@ -32,8 +32,8 @@ function hook_bean_types() {
       'class' => 'ClassName',
       'parent' => 'bean',
       // This should be pointing to the path of your custom bean plugin module.
-      'path' => drupal_get_path('module', 'example_bean') . '/plugins',
-      // Class files should be named accordingly in order to support ctools
+      'path' => backdrop_get_path('module', 'example_bean') . '/plugins',
+      // Class files should be named accordingly in order to support
       // autoloading procedures.
       'file' => 'ClassName.class.php',
     ),
@@ -47,8 +47,8 @@ function hook_bean_types() {
  * Access callback for beans
  *
  * @param $bean
- *  Tthe fully loaded bean object
- * @param $bean
+ *  The fully loaded bean object
+ * @param $op
  *  The access type of view, edit, delete, create
  * @param $account
  *  The user account

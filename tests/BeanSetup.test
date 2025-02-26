@@ -8,7 +8,7 @@
 /**
  * A base class for other classes to extend.
  */
-abstract class BeanSetup extends DrupalWebTestCase {
+abstract class BeanSetup extends BackdropWebTestCase {
 
   /**
    * An admin user account.
@@ -32,8 +32,8 @@ abstract class BeanSetup extends DrupalWebTestCase {
     $modules[] = 'block';
 
     // Contrib dependencies.
-    $modules[] = 'ctools';
-    $modules[] = 'entity';
+    $modules[] = 'entity_plus';
+    $modules[] = 'plugin_manager';
 
     // The Bean module itself.
     $modules[] = 'bean';
@@ -56,8 +56,8 @@ abstract class BeanSetup extends DrupalWebTestCase {
       'access administration pages',
       'access content',
     );
-    $this->admin_user = $this->drupalCreateUser($permissions);
-    $this->drupalLogin($this->admin_user);
+    $this->admin_user = $this->backdropCreateUser($permissions);
+    $this->backdropLogin($this->admin_user);
 
     // Test plugin name.
     $this->plugin_name = 'test_bean';

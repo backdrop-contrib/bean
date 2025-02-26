@@ -1,6 +1,6 @@
 <?php
 
-class BeanEntityCacheAPIController extends BeanEntityAPIController {
+class BeanEntityCacheAPIController extends BeanEntityController {
 
   public function resetCache(array $ids = NULL) {
     EntityCacheControllerHelper::resetEntityCache($this, $ids);

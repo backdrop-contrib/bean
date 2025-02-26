@@ -150,7 +150,7 @@ function bean_services_create($bean) {
   $form_state['values']['op'] = t('Save');
   $form_state['build_info']['args'] = array(&$bean_new);
 
-  $ret = drupal_form_submit('bean_form', $form_state);
+  $ret = backdrop_form_submit('bean_form', $form_state);
 
   // Error if needed.
   if ($errors = form_get_errors()) {
@@ -192,7 +192,7 @@ function bean_services_update($bid, $bean) {
   $form_state['values']['op'] = t('Save');
   $form_state['build_info']['args'] = array(&$old_bean);
 
-  drupal_form_submit('bean_form', $form_state);
+  backdrop_form_submit('bean_form', $form_state);
 
   if ($errors = form_get_errors()) {
     return services_error(implode(" ", $errors), 406, array('form_errors' => $errors));
@@ -293,5 +293,5 @@ function bean_services_access($op, $args) {
     return FALSE;
   }
 
-  return entity_access($op, 'bean', $bean);
+  return entity_plus_access($op, 'bean', $bean);
 }

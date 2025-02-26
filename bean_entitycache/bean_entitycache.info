@@ -1,10 +1,9 @@
 name = "Bean - Entitycache"
 description = "Integrates the Bean module with the Entitycache module"
 
-core = 7.x
+backdrop = 1.x
+type = module
 package = Performance and scalability
-
-files[] = includes/bean_entitycache.core.inc
 
 dependencies[] = bean
 dependencies[] = entitycache

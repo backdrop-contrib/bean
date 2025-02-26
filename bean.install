@@ -212,60 +212,8 @@ function bean_uninstall() {
   foreach (field_info_bundles('bean') as $bean_type => $bean_info) {
     field_attach_delete_bundle('bean', $bean_type);
   }
-
-  //Remove shortcut links
-  if (module_exists('shortcut')) {
-    $shortcut_set = shortcut_default_set();
-    foreach ($shortcut_set->links as $shortcut_key => $shortcut) {
-      if ($shortcut['link_path'] == 'block/add' || $shortcut['link_path'] == 'admin/content/blocks') {
-        unset($shortcut_set->link[$shortcut_key]);
-        shortcut_set_save($shortcut_set);
-        menu_link_delete(NULL, $shortcut['link_path']);
-      }
-    }
-  }
-
-  // Remove all variables used by the module.
-  variable_del('bean_ctools_separate');
-  variable_del('bean_ctools_prefix');
-  variable_del('bean_usage_results_per_page');
-  // Remove all variables for field bundle settings.
-  db_delete('variable')
-    ->condition('name', 'field_bundle_settings_bean%', 'LIKE')
-    ->execute();
-  // Remove all variables for blacklisting modules.
-  // Note: it is not possible to list them here because the variable names are
-  // generated dynamically and are not defined upfront.
-  db_delete('variable')
-    ->condition('name', 'bean_all_blacklist%', 'LIKE')
-    ->execute();
-
 }
 
-/**
- * Implements hook_install().
- */
-function bean_install() {
-
-  if (module_exists('shortcut')) {
-    $t = get_t();
-
-    // Load the default shortcut set
-    $shortcut_set = shortcut_default_set();
-    $shortcut_set->links[] = array(
-        'link_path' => 'block/add',
-        'link_title' => $t('Add block'),
-        'weight' => -18,
-    );
-    $shortcut_set->links[] = array(
-      'link_path' => 'admin/content/blocks',
-      'link_title' => $t('Blocks'),
-      'weight' => -18,
-    );
-
-    shortcut_set_save($shortcut_set);
-  }
-}
 /**
  * Implements hook_disable().
  */
@@ -289,191 +237,24 @@ function bean_disable() {
   }
 }
 
-
 /**
- * Update Registry to implement new Code Interface
+ * Implements hook_update_last_removed().
  */
-function bean_update_7001() {
-  registry_rebuild();
-  return t('Registry has been rebuilt');
+function bean_update_last_removed() {
+  return 7013;
 }
 
 /**
- * Add delta field.
+ * Migrate bean variables to config.
  */
-function bean_update_7002() {
-  $spec = array(
-    'description' => "The bean's {block}.delta.",
-    'type' => 'varchar',
-    'initial' => '',
-    'length' => 32,
-    'not null' => TRUE,
-  );
-  db_add_field('bean', 'delta', $spec);
-  db_update('bean')
-    ->expression('delta', 'bid')
-    ->execute();
-  return t('Bean delta field added.');
-}
+function bean_update_1000() {
+  $config = config('bean.settings');
+  $config->set('bean_uid', update_variable_get('bean_uid', '1'));
+  $config->set('bean_separate', update_variable_get('bean_ctools_separate', TRUE));
+  $config->set('bean_prefix', update_variable_get('bean_ctools_prefix', array()));
+  $config->save();
 
-/**
- * Add view_mode field.
- */
-function bean_update_7003() {
-  $spec = array(
-    'description' => "The view mode of the bean.",
-    'type' => 'varchar',
-    'initial' => 'default',
-    'length' => 32,
-    'not null' => TRUE,
-  );
-  db_add_field('bean', 'view_mode', $spec);
-  db_update('bean')
-    ->fields(array('view_mode' => 'default'))
-    ->execute();
-  return t('Bean view mode field added.');
-}
-
-/**
- * Update Registry to implement new Code Interface
- */
-function bean_update_7004() {
-  registry_rebuild();
-  return t('Registry has been rebuilt');
-}
-
-/**
- * Rebuild the menus
- */
-function bean_update_7005() {
-  registry_rebuild();
-  menu_rebuild();
-  return t('Registry and Menu have been rebuilt');
-}
-
-/**
- * Rebuild the registry to include new translation class
- */
-function bean_update_7006() {
-  registry_rebuild();
-  return t('Registry and Menu have been rebuilt');
-}
-
-/**
- * Add a Bean Revision Table
- */
-function bean_update_7007(&$return) {
-  $t = get_t();
-  drupal_load('module', 'bean');
-  cache_clear_all('schema', 'cache'); // So we actually load the current schema.
-  $schema = bean_schema();
-  $bean = $schema['bean'];
-  $bean_revision = $schema['bean_revision'];
-
-  /**
-   * Adding an unsigned attribute to our primary key. Because our primary key is an auto_increment,
-   * we can't drop it without a MySQL error. Instead, we're doing a MySQL-specific call to perform
-   * our alter, and leaving the Drupal-recommended way of doing things as default.
-   *
-   * Reference (error): http://stackoverflow.com/questions/2111291/remove-primary-key-in-mysql
-   * Reference: http://api.drupal.org/api/drupal/includes%21database%21database.inc/function/db_change_field/7
-   */
-  switch(db_driver('mysql')) {
-    case 'mysql':
-      db_query('ALTER TABLE {bean} MODIFY bid INT UNSIGNED NOT NULL AUTO_INCREMENT');
-      break;
-    default:
-      db_drop_primary_key('bean');
-      db_change_field('bean', 'bid', 'bid', $bean['fields']['bid'], array('primary key' => array('bid')));
-  }
-
-  db_add_field('bean', 'vid', $bean['fields']['vid']);
-
-  db_create_table('bean_revision', $bean_revision);
-
-  $results = db_query('SELECT * FROM {bean}');
-  foreach ($results as $row) {
-    $bean_revision = array(
-      'bid' => $row->bid,
-      'uid' => variable_get('bean_uid', 1),
-      'delta' => $row->delta,
-      'label' => $row->label,
-      'title' => $row->title,
-      'type' => $row->type,
-      'view_mode' => $row->view_mode,
-      'data' => $row->data,
-      'log' => $t('Added via update script'),
-      'created' => REQUEST_TIME,
-      'changed' => REQUEST_TIME,
-    );
-
-    $options = array('return' => Database::RETURN_INSERT_ID);
-    $vid = db_insert('bean_revision', $options)
-      ->fields($bean_revision)
-      ->execute();
-
-    db_update('bean')
-      ->fields(array('vid' => $vid))
-      ->condition('bid', $row->bid)
-      ->execute();
-  }
-  // Add unique key back after populating our table.
-  db_add_unique_key('bean', 'vid', array('vid'));
-
-  return $t('Bean Revision table has been added.');
-}
-
-/**
- * Add uid, changed and created to bean table
- */
-function bean_update_7010(&$sand) {
-  $t = get_t();
-  $schema = bean_schema();
-
-  db_add_field('bean', 'uid', $schema['bean_revision']['fields']['uid']);
-  db_add_field('bean', 'created', $schema['bean_revision']['fields']['created']);
-  db_add_field('bean', 'changed', $schema['bean_revision']['fields']['changed']);
-
-  $results = db_query("SELECT bid, uid, created, changed from {bean_revision} GROUP BY bid ORDER BY changed");
-  foreach($results as $row) {
-    db_update('bean')
-      ->fields(array(
-          'uid' => $row->uid,
-          'created' => $row->created,
-          'changed' => $row->changed,
-        ))
-      ->condition('bid', $row->bid)
-      ->execute();
-  }
-
-  return $t('Bean Table updated and data upgraded');
-}
-
-/**
- * Clear the menu cache so that the new path for assigning the active revision
- * will be picked up.
- */
-function bean_update_7011() {
-  menu_cache_clear_all();
-  menu_rebuild();
-}
-
-/**
- * Rebuild registry to ensure autoloading for renamed plugins.
- */
-function bean_update_7012() {
-  registry_rebuild();
-  return t('Registry has been rebuilt');
-}
-
-/**
- * Remove default for bean_revision.delta.
- */
-function bean_update_7013() {
-  db_change_field('bean_revision', 'delta', 'delta', array(
-    'description' => "The bean's {block}.delta.",
-    'type' => 'varchar',
-    'length' => 32,
-    'not null' => TRUE,
-  ));
+  update_variable_del('bean_uid');
+  update_variable_del('bean_ctools_separate');
+  update_variable_del('bean_ctools_prefix');
 }

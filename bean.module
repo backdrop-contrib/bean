@@ -6,6 +6,21 @@
  */
 
 /**
+ * Bean constant for user-defined block types.
+ */
+define('BEAN_STORAGE_NORMAL', 1);
+
+/**
+ * Bean constant for block types that override module-defined presets.
+ */
+define('BEAN_STORAGE_OVERRIDE', 2);
+
+/**
+ * Bean constant for module-defined block types.
+ */
+define('BEAN_STORAGE_DEFAULT', 4);
+
+/**
  * Implements hook_entity_info().
  */
 function bean_entity_info() {
@@ -13,7 +28,8 @@ function bean_entity_info() {
     'bean' => array(
       'label' => t('Block'),
       'entity class' => 'Bean',
-      'controller class' => 'BeanEntityAPIController',
+      'controller class' => 'BeanEntityController',
+      'module' => 'bean',
       // This class provides integration with the Inline entity form module.
       'inline entity form' => array(
         'controller' => 'BeanInlineEntityFormController',
@@ -75,7 +91,6 @@ function bean_entity_info() {
           ),
         ),
       ),
-
       // @see devel_contrib.module
       'devel contrib generator class' => 'DevelContribGeneratorDefault',
     ),
@@ -142,7 +157,6 @@ function bean_menu() {
     'weight' => -20,
   );
 
-
   $items['block/%bean_delta/edit'] = array(
     'title' => 'Edit Block',
     'type' => MENU_LOCAL_TASK,
@@ -150,15 +164,15 @@ function bean_menu() {
     'page callback' => 'bean_edit',
     'page arguments' => array(1),
     'access arguments' => array('update', 'bean', 1),
-    'access callback' => 'entity_access',
+    'access callback' => 'entity_plus_access',
     'file' => 'includes/bean.pages.inc',
   );
 
   $items['block/%bean_delta/delete'] = array(
     'title' => 'Delete Block',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('bean_delete_confirm', 1),
-    'access callback' => 'entity_access',
+    'access callback' => 'entity_plus_access',
     'access arguments' => array('delete', 'bean', 1),
     'weight' => 1,
     'type' => MENU_LOCAL_TASK,
@@ -180,7 +194,7 @@ function bean_menu() {
     'title arguments' => array(1),
     'page callback' => 'bean_view',
     'page arguments' => array(1),
-    'access callback' => 'entity_access',
+    'access callback' => 'entity_plus_access',
     'access arguments' => array('view', 'bean', 1),
     'file' => 'includes/bean.pages.inc',
     'load arguments' => array(3),
@@ -190,7 +204,7 @@ function bean_menu() {
     'title' => 'View',
     'page callback' => 'bean_view',
     'page arguments' => array(1),
-    'access callback' => 'entity_access',
+    'access callback' => 'entity_plus_access',
     'access arguments' => array('view', 'bean', 1),
     'file' => 'includes/bean.pages.inc',
     'load arguments' => array(3),
@@ -203,7 +217,7 @@ function bean_menu() {
     'title' => 'Edit',
     'page callback' => 'bean_edit',
     'page arguments' => array(1),
-    'access callback' => 'entity_access',
+    'access callback' => 'entity_plus_access',
     'access arguments' => array('update', 'bean', 1),
     'file' => 'includes/bean.pages.inc',
     'load arguments' => array(3),
@@ -213,9 +227,9 @@ function bean_menu() {
 
   $items['block/%bean_delta/revisions/%/set-active'] = array(
     'title' => 'Set active',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('bean_set_default_confirm', 1),
-    'access callback' => 'entity_access',
+    'access callback' => 'entity_plus_access',
     'access arguments' => array('update', 'bean', 1),
     'file' => 'includes/bean.pages.inc',
     'load arguments' => array(3),
@@ -225,9 +239,9 @@ function bean_menu() {
 
   $items['block/%bean_delta/revisions/%/delete'] = array(
     'title' => 'Delete',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('bean_delete_revision_confirm', 1),
-    'access callback' => 'entity_access',
+    'access callback' => 'entity_plus_access',
     'access arguments' => array('delete', 'bean', 1),
     'file' => 'includes/bean.pages.inc',
     'load arguments' => array(3),
@@ -236,17 +250,8 @@ function bean_menu() {
     'context' => MENU_CONTEXT_NONE,
   );
 
-  $items['admin/content/blocks'] = array(
-    'title' => 'Blocks',
-    'description' => 'Manage blocks used on your site.',
-    'page callback' => 'bean_list',
-    'access arguments' => array('access bean overview'),
-    'file' => 'includes/bean.pages.inc',
-    'type' => MENU_LOCAL_TASK | MENU_NORMAL_ITEM,
-  );
-
   if (module_exists('devel')) {
-    $devel_path = drupal_get_path('module', 'devel');
+    $devel_path = backdrop_get_path('module', 'devel');
     $items['block/%bean_delta/devel'] = array(
       'title' => 'Devel',
       'page callback' => 'devel_load_object',
@@ -276,6 +281,42 @@ function bean_menu() {
   return $items;
 }
 
+
+/**
+ * Implements hook_plugin_manager_plugin_directory().
+ *
+ * Inform Plugin Manager about our panelizer plugin.
+ * @todo: Convert this to a layouts plugin.
+ */
+function bean_plugin_manager_plugin_directory($module, $plugin) {
+  if (in_array($module, array('panelizer'))) {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function bean_autoload_info() {
+  return array(
+    'BeanTypePluginInterface' => 'includes/bean.core.inc',
+    'Bean' => 'includes/bean.core.inc',
+    'BeanEntityController' => 'includes/bean.core.inc',
+    'BeanException' => 'includes/bean.core.inc',
+    'BeanMetadataController' => 'includes/bean.info.inc',
+    'BeanInlineEntityFormController' => 'includes/bean.inline_entity_form.inc',
+    'EntityTranslationBeanHandler' => 'includes/translation.handler.bean.inc',
+    'BeanDefault' => 'plugins/BeanDefault.class.php',
+    'BeanPlugin' => 'plugins/BeanPlugin.class.php',
+    'PanelizerEntityBean' => 'plugins/entity/PanelizerEntityBean.class.php',
+    'views_handler_field_bean_delete_link' => 'views/views_handler_field_bean_delete_link.inc',
+    'views_handler_field_bean_edit_link' => 'views/views_handler_field_bean_edit_link.inc',
+    'views_handler_field_bean_operations' => 'views/views_handler_field_bean_operations.inc',
+    'views_handler_field_bean_type' => 'views/views_handler_field_bean_type.inc',
+    'views_handler_filter_bean_type' => 'views/views_handler_filter_bean_type.inc',
+  );
+}
+
 /**
  * Title callback
  */
@@ -287,7 +328,7 @@ function bean_revision_title($bean) {
  * Implements hook_admin_paths().
  */
 function bean_admin_paths() {
-  if (variable_get('node_admin_theme')) {
+  if (config_get('system.performance', 'node_admin_theme')) {
     $paths = array(
       'block/*/edit' => TRUE,
       'block/*/delete' => TRUE,
@@ -331,7 +372,7 @@ function bean_type_panelizer_load($type) {
  *   Depending whether $type isset, an array of bean types or a single one.
  */
 function bean_get_types() {
-  $bean_types = &drupal_static(__FUNCTION__);
+  $bean_types = &backdrop_static(__FUNCTION__);
 
   if (empty($bean_types)) {
     $bean_types = bean_load_plugin_class_all();
@@ -344,18 +385,17 @@ function bean_get_types() {
  * Fetch the widget plugin info
  */
 function bean_fetch_plugin_info($plugin = NULL) {
-  $plugins = &drupal_static(__FUNCTION__);
-  ctools_include('plugins');
+  $plugins = &backdrop_static(__FUNCTION__);
 
   if (empty($plugins)) {
     if (($cache = cache_get('bean_plugins')) && !empty($cache->data)) {
       $plugins = $cache->data;
     }
     else {
-      $plugins = ctools_get_plugins('bean', 'types');
+      $plugins = plugin_manager_get_plugins('bean', 'types');
 
       // Only use modules with the same version.
-      $allowed_modules = array_keys(ctools_plugin_api_info('bean', 'types', bean_min_version(), bean_current_version()));
+      $allowed_modules = array_keys(plugin_manager_api_include('bean', 'types', bean_min_version(), bean_current_version()));
       foreach ($plugins as $key => $plugin_value) {
         if (!in_array($plugin_value['module'], $allowed_modules) || ($plugin_value['abstract'])) {
           unset($plugins[$key]);
@@ -371,9 +411,9 @@ function bean_fetch_plugin_info($plugin = NULL) {
   else {
     // Make sure the plugin is in the cache.
     if (!isset($plugins[$plugin])) {
-      $plugin_info = ctools_get_plugins('bean', 'types', $plugin);
+      $plugin_info = plugin_manager_get_plugins('bean', 'types', $plugin);
       if (empty($allowed_modules)) {
-        $allowed_modules = array_keys(ctools_plugin_api_info('bean', 'types', bean_current_version(), bean_min_version()));
+        $allowed_modules = array_keys(plugin_manager_api_include('bean', 'types', bean_current_version(), bean_min_version()));
       }
       if (in_array($plugin_info['module'], $allowed_modules)) {
         $plugins[$plugin] = $plugin_info;
@@ -391,22 +431,54 @@ function bean_fetch_plugin_info($plugin = NULL) {
 }
 
 /**
+ * Function to create or update a Bean type.
+ *
+ * @param object $type
+ *   The object of the Bean type to create/update.
+ *
+ * @return int
+ *   SAVED_UPDATED when updated, SAVED_NEW when created.
+ *
+ * @throws Exception
+ */
+function bean_type_save($type) {
+  $config = config('bean.type.' . $type->name);
+
+  if ($config->isNew()) {
+    $status = SAVED_NEW;
+  }
+  else {
+    $status = SAVED_UPDATED;
+  }
+
+  $type_data = array(
+    // 'type_id', 'name', 'label', 'options', 'description'
+    'type_id' => (string) $type->type_id,
+    'name' => (string) $type->name,
+    'label' => (string) $type->label,
+    'description' => (string) $type->description,
+    'options' => $type->options,
+  );
+  foreach ($bundle_data as $key => $value) {
+    $config->set($key, $value);
+  }
+  $config->save();
+  entity_info_cache_clear();
+  state_set('menu_rebuild_needed', TRUE);
+  return $status;
+}
+
+/**
  * Reset the static variables and caches.
  */
-function bean_reset($skip_menu_rebuild = FALSE, $rehash_blocks= FALSE) {
-  // Clear ctools cache.
-  ctools_include('plugins');
-  ctools_get_plugins_reset();
+function bean_reset($skip_menu_rebuild = FALSE, $rehash_blocks = FALSE) {
   cache_clear_all('plugins:bean:types', 'cache');
-  cache_clear_all('ctools_plugin_files', 'cache', TRUE);
 
   // Invoke modules to clear their caches.
   foreach (module_implements('bean_cache_clear') as $module) {
     module_invoke($module, 'bean_cache_clear');
   }
 
-  // Rebuild ctools plugin types and the menu.
-  ctools_plugin_get_plugin_type_info(TRUE);
   if (!$skip_menu_rebuild) {
     menu_rebuild();
   }
@@ -414,7 +486,9 @@ function bean_reset($skip_menu_rebuild = FALSE, $rehash_blocks= FALSE) {
   // Rehashes blocks for active themes. This will populate the blocks table and allow
   // modules like blockreference to work properly.
   if ($rehash_blocks && module_exists('block')) {
-    block_flush_caches();
+    cache_clear_all();
+    // @todo: Can this be better targeted?
+    // block_flush_caches();
   }
 }
 
@@ -423,34 +497,35 @@ function bean_reset($skip_menu_rebuild = FALSE, $rehash_blocks= FALSE) {
  */
 function bean_bean_cache_clear() {
   // Clear static variables.
-  drupal_static_reset('bean_access');
-  drupal_static_reset('bean_get_types');
-  drupal_static_reset('bean_get_all_beans');
-  drupal_static_reset('bean_fetch_plugin_info');
-  drupal_static_reset('bean_load_plugin_class');
-  drupal_static_reset('bean_block_info');
-  drupal_static_reset('bean_load_delta');
+  backdrop_static_reset('bean_access');
+  backdrop_static_reset('bean_get_types');
+  backdrop_static_reset('bean_get_all_beans');
+  backdrop_static_reset('bean_fetch_plugin_info');
+  backdrop_static_reset('bean_load_plugin_class');
+  backdrop_static_reset('bean_block_info');
+  backdrop_static_reset('bean_load_delta');
 
   // Flush caches.
   cache_clear_all('bean_plugins', 'cache');
   cache_clear_all('bean_block_info', 'cache');
 
   if (module_exists('block')) {
-    cache_clear_all(NULL, 'cache_block');
+    // cache_clear_all(NULL, 'cache_block');
   }
   cache_clear_all(NULL, 'cache_page');
 }
 
 /**
  * Clear out cache_block table
- * @param  object $bean the bean object
+ * @param  object $bean
+ *   The bean object.
  */
-function bean_cache_clear_block($bean = null) {
+function bean_cache_clear_block($bean = NULL) {
   if (isset($bean->delta)) {
-    cache_clear_all('bean:' . $bean->delta . ':', 'cache_block', TRUE);
+    // cache_clear_all('bean:' . $bean->delta . ':', 'cache_block', TRUE);
   }
   else {
-    cache_clear_all('bean:', 'cache_block', TRUE);
+    // cache_clear_all('bean:', 'cache_block', TRUE);
   }
 
   cache_clear_all('bean_block_info', 'cache');
@@ -459,17 +534,16 @@ function bean_cache_clear_block($bean = null) {
 /**
  * Load a widget class
  *
- * @param $plugin_key string
- *  the key fo the plugin
+ * @param string $plugin_key
+ *   The key fo the plugin.
  * @return BeanTypePluginInterface | Boolean
- *  An instance of the bean class or FALSE if not loaded
+ *   An instance of the bean class, or FALSE if not loaded.
  */
 function bean_load_plugin_class($plugin_key = NULL) {
-  $cache = &drupal_static(__FUNCTION__);
+  $cache = &backdrop_static(__FUNCTION__);
 
   if (!isset($cache[$plugin_key])) {
-    ctools_include('plugins');
-    $class = ctools_plugin_load_class('bean', 'types', $plugin_key, 'handler');
+    $class = plugin_manager_load_class('bean', 'types', $plugin_key, 'handler');
     if ($class && bean_check_plugin_class($class)) {
       $cache[$plugin_key] = new $class(bean_fetch_plugin_info($plugin_key));
     }
@@ -481,8 +555,8 @@ function bean_load_plugin_class($plugin_key = NULL) {
 /**
  * Check the plugin type class
  *
- * @param $class string
- *  The name of the bean type class
+ * @param string $class
+ *   The name of the bean type class.
  * @return Boolean
  */
 function bean_check_plugin_class($class) {
@@ -513,7 +587,7 @@ function bean_load_plugin_class_all() {
  * Load all beans
  */
 function bean_get_all_beans() {
-  $beans = &drupal_static(__FUNCTION__);
+  $beans = &backdrop_static(__FUNCTION__);
 
   if (!isset($beans)) {
     $query = new EntityFieldQuery();
@@ -570,7 +644,7 @@ function bean_load_revision($bid, $vid, $reset = FALSE) {
  *   A fully-loaded $bean object or FALSE if it cannot be loaded.
  */
 function bean_load_delta($delta, $reset = FALSE, $revision = NULL) {
-  $deltas = &drupal_static(__FUNCTION__, array());
+  $deltas = &backdrop_static(__FUNCTION__, array());
   if (!$reset && !$revision && isset($deltas[$delta])) {
     return $deltas[$delta];
   }
@@ -702,9 +776,9 @@ function bean_type_access($op, $type = NULL, $account = NULL) {
  *   Whether access is allowed or not.
  */
 function bean_access($op, $bean = NULL, $account = NULL) {
-  $rights = &drupal_static(__FUNCTION__, array());
+  $rights = &backdrop_static(__FUNCTION__, array());
 
-  // Only real permissions are view, delete, create and edit
+  // Only real permissions are view, delete, create and edit.
   switch ($op) {
     case 'view':
     case 'delete':
@@ -782,7 +856,7 @@ function bean_add_page_access() {
     return TRUE;
   }
   foreach (bean_get_types() as $bean_type) {
-    if (entity_access('create', 'bean', $bean_type->type)) {
+    if (entity_plus_access('create', 'bean', $bean_type->type)) {
       return TRUE;
     }
   }
@@ -816,7 +890,7 @@ function bean_delete(Bean $bean) {
 /**
  * Helper to easily create a bean.
  *
- * @param $values array
+ * @param array $values
  *   Array with the following keys:
  *   - "arguments" - Array with arguments that should be replaced on run time in
  *     the message type.
@@ -832,7 +906,7 @@ function bean_create($values) {
  */
 function bean_view(Bean $bean, $view_mode = 'default', $langcode = NULL) {
   if (!isset($langcode)) {
-    $langcode = $GLOBALS['language_content']->language;
+    $langcode = $GLOBALS['language_content']->langcode;
   }
 
   return $bean->view($view_mode, $langcode);
@@ -843,7 +917,7 @@ function bean_view(Bean $bean, $view_mode = 'default', $langcode = NULL) {
  */
 function bean_view_callback($entities, $view_mode, $langcode, $entity_type) {
   $render = array();
-  foreach($entities as $key => $entity) {
+  foreach ($entities as $key => $entity) {
     $id = entity_id($entity_type, $entity);
     $render[$entity_type][$id] = bean_view($entity, $view_mode, $langcode);
   }
@@ -854,7 +928,7 @@ function bean_view_callback($entities, $view_mode, $langcode, $entity_type) {
  * Implements hook_block_info().
  */
 function bean_block_info() {
-  $blocks = &drupal_static(__FUNCTION__, array());
+  $blocks = &backdrop_static(__FUNCTION__, array());
 
   if (!empty($blocks)) {
     return $blocks;
@@ -887,7 +961,7 @@ function bean_block_view($delta = '') {
   $return = array();
   $bean = bean_load_delta($delta);
 
-  if (entity_access('view', 'bean', $bean) && $bean) {
+  if (entity_plus_access('view', 'bean', $bean) && $bean) {
     $content = $bean->view($bean->view_mode);
     if (!is_array($content)) {
       $content = array(
@@ -935,9 +1009,9 @@ function bean_bean_types_api_info() {
 }
 
 /**
- * Implements hook_ctools_plugin_type().
+ * Implements hook_plugin_manager_plugin_type().
  */
-function bean_ctools_plugin_type() {
+function bean_plugin_manager_plugin_type() {
   return array(
     'types' => array(
       'cache' => TRUE,
@@ -949,16 +1023,16 @@ function bean_ctools_plugin_type() {
         'abstract' => FALSE,
         'label' => t('Block'),
         'description' => '',
-        'cache_level' => DRUPAL_CACHE_PER_ROLE,
+        'cache_level' => BACKDROP_CACHE_PER_ROLE,
         // Editable in the block type UI
-        // THESE should have 'bean_custom' as the class
+        // THESE should have 'bean_custom' as the class.
         'editable' => FALSE,
         'view_mode' => 'default',
         'handler' => array(
           'class' => 'BeanDefault',
           'parent' => 'bean',
           'file' => 'BeanDefault.class.php',
-          'path' => drupal_get_path('module', 'bean') . '/plugins',
+          'path' => backdrop_get_path('module', 'bean') . '/plugins',
         ),
       ),
     ),
@@ -975,7 +1049,7 @@ function bean_bean_types() {
     'handler' => array(
       'class' => 'BeanPlugin',
       'file' => 'BeanPlugin.class.php',
-      'path' => drupal_get_path('module', 'bean') . '/plugins',
+      'path' => backdrop_get_path('module', 'bean') . '/plugins',
     ),
   );
 
@@ -985,7 +1059,7 @@ function bean_bean_types() {
       'class' => 'BeanDefault',
       'parent' => 'bean',
       'file' => 'BeanDefault.class.php',
-      'path' => drupal_get_path('module', 'bean') . '/plugins',
+      'path' => backdrop_get_path('module', 'bean') . '/plugins',
     ),
   );
 
@@ -1030,7 +1104,7 @@ function bean_workbench_create_alter(&$output) {
   $items = array();
   $i = 0;
   foreach (bean_get_types() as $bean_type) {
-    if (entity_access('create', 'bean', $bean_type->type)) {
+    if (entity_plus_access('create', 'bean', $bean_type->type)) {
       $items[str_replace(' ', '', $bean_type->getLabel()) . '_' . $i] = array(
         'title' => $bean_type->getLabel(),
         'href' => 'block/add/' . $bean_type->buildURL(),
@@ -1054,7 +1128,7 @@ function bean_workbench_create_alter(&$output) {
 }
 
 /**
- * Implements hook_modules_enabled()
+ * Implements hook_modules_enabled().
  */
 function bean_modules_enabled($modules) {
   bean_reset(TRUE);
@@ -1090,18 +1164,18 @@ function bean_field_extra_fields() {
       'label' => t('View mode'),
       'description' => t('Bean module element'),
       'weight' => 10,
-     );
+    );
   }
   return $extra;
 }
 
 /**
- * Implements hook_views_api()
+ * Implements hook_views_api().
  */
 function bean_views_api() {
   return array(
     'api' => 3,
-    'path' => drupal_get_path('module', 'bean') . '/views',
+    'path' => backdrop_get_path('module', 'bean') . '/views',
   );
 }
 
@@ -1154,11 +1228,26 @@ function bean_admin_menu_output_build(&$content) {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function bean_config_info() {
+  $prefixes['bean.settings'] = array(
+    'label' => t('Bean settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+
+/**
  * CTools callback for Bean blocks.
+ * @todo: Remove CTools hook.
  *
  * @see _ctools_block_content_type_content_type() in block.inc.
+ * https://git.drupalcode.org/project/ctools/-/blob/7.x-1.x/plugins/content_types/block/block.inc#L65-83
  */
 function bean_ctools_block_info($module, $delta, &$info) {
+  $config = config('bean.settings');
+
   // Use the core block icon.
   $info['icon'] = 'icon_contrib_block.png';
 
@@ -1171,26 +1260,15 @@ function bean_ctools_block_info($module, $delta, &$info) {
   // By default store all beans in the Blocks category.
   $info['category'] = t('Blocks');
 
-  // If the bean type loaded correctly (should always happen),
+  // If the bean type loaded correctly (should always happen).
   if (isset($bean_types[$bean->type])) {
-    // Optionally group the blocks by their bean type..
-    if (variable_get('bean_ctools_separate', TRUE)) {
+    // Optionally group the blocks by their bean type.
+    if ($config->get('bean_separate')) {
       $info['category'] = t('Blocks') . ': ' . $bean_types[$bean->type]->getLabel();
     }
     // Optionally prefix the block with the bean type's label.
-    if (variable_get('bean_ctools_prefix', FALSE)) {
+    if ($config->get('bean_prefix')) {
       $info['title'] = $bean_types[$bean->type]->getLabel() . ': ' . $info['title'];
     }
-  }
-}
-
-/**
- * Implements hook_ctools_plugin_directory().
- *
- * Inform ctools about our panelizer plugin.
- */
-function bean_ctools_plugin_directory($module, $plugin) {
-  if (in_array($module, array('panelizer'))) {
-    return 'plugins/' . $plugin;
   }
 }

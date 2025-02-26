@@ -8,7 +8,7 @@
 class BeanInlineEntityFormController extends EntityInlineEntityFormController {
 
   /**
-  * Overrides EntityInlineEntityFormController::labels().
+   * Overrides EntityInlineEntityFormController::labels().
    */
   public function labels() {
     $labels = array(
@@ -106,7 +106,7 @@ class BeanInlineEntityFormController extends EntityInlineEntityFormController {
       $entity_form['revision']['#access'] = FALSE;
     }
 
-    ctools_include('dependent');
+    //ctools_include('dependent');
     ctools_add_js('dependent');
 
     $entity_form['revision']['is_new_revision'] = array(
@@ -126,7 +126,7 @@ class BeanInlineEntityFormController extends EntityInlineEntityFormController {
       $entity_form['revision']['default_revision'] = array(
         '#type' => 'checkbox',
         '#title' => t('Set Revision as default'),
-        '#default_value' => $bean->isDefaultRevision(),
+        '#default_value' => $bean->isActiveRevision(),
         '#states' => array(
           // Hide if the option above is disabled, to avoid potential dataloss.
           'invisible' => array(

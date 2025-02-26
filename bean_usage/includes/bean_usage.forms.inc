@@ -1,6 +1,11 @@
 <?php
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function bean_usage_settings() {
   $form = array();
+  $form['#config'] = 'bean_usage.settings';
 
   $form['bean_usage_results'] = array(
     '#type' => 'fieldset',
@@ -25,7 +30,7 @@ function bean_usage_settings() {
       '45' => 45,
       '50' => 50,
     ),
-    '#default_value' => variable_get('bean_usage_results_per_page', 30),
+    '#default_value' => config_get('bean_usage.settings', 'bean_usage_results_per_page'),
   );
 
   return system_settings_form($form);
@@ -37,7 +42,7 @@ function bean_usage_settings() {
  * @return array
  */
 function bean_usage_filters() {
-  $filters = drupal_get_query_parameters();
+  $filters = backdrop_get_query_parameters();
   $filters['type'] = empty($filters['type']) ? '' : explode(',', $filters['type']);
 
   $form = array();
@@ -64,7 +69,7 @@ function bean_usage_filters() {
     '#prefix' => '<div style="margin-right:10px; position:relative; float:left;">',
     '#suffix' => '</div>',
     '#multiple' => $multiple,
-    '#size' => $multiple ? min(4, count($options)) : 0,
+    '#size' => $multiple?min(4, count($options)) : 0,
     '#title' => t('Filter type'),
     '#description' => t('Choose the bean types to filter the list of results.'),
     '#options' => $options,
@@ -113,8 +118,8 @@ function bean_usage_filters() {
  * @param $form_state
  */
 function bean_usage_filters_submit(&$form, &$form_state) {
-  // Get the query string parameters minus the drupal url and filter param
-  $params = drupal_get_query_parameters($_GET, array('q', 'filter'));
+  // Get the query string parameters minus the backdrop url and filter param
+  $params = backdrop_get_query_parameters($_GET, array('q', 'filter'));
 
   // add the filters to the query string
   $filters = array(
@@ -137,5 +142,5 @@ function bean_usage_filters_submit(&$form, &$form_state) {
   }
 
   // Redirect back to bean usage view with added filter query string param
-  drupal_goto($_GET['q'], array('query' => $params));
+  backdrop_goto($_GET['q'], array('query' => $params));
 }
