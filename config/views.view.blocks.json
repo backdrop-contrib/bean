@@ -599,7 +599,7 @@
             "ui_name": "",
             "operator": "contains",
             "value": "",
-            "group": "1",
+            "group": 1,
             "exposed": true,
             "expose": {
               "operator_id": "title_op",
@@ -608,6 +608,48 @@
               "use_operator": 0,
               "operator": "title_op",
               "identifier": "title",
+              "required": 0,
+              "remember": 0,
+              "multiple": false,
+              "remember_roles": {
+                "authenticated": "authenticated",
+                "anonymous": 0,
+                "editor": 0,
+                "administrator": 0
+              }
+            },
+            "is_grouped": false,
+            "group_info": {
+              "label": "",
+              "description": "",
+              "identifier": "",
+              "optional": true,
+              "widget": "select",
+              "multiple": false,
+              "remember": 0,
+              "default_group": "All",
+              "default_group_multiple": [],
+              "group_items": []
+            }
+          },
+          "label": {
+            "id": "label",
+            "table": "bean",
+            "field": "label",
+            "relationship": "none",
+            "group_type": "group",
+            "ui_name": "",
+            "operator": "contains",
+            "value": "",
+            "group": 1,
+            "exposed": true,
+            "expose": {
+              "operator_id": "label_op",
+              "label": "Label",
+              "description": "",
+              "use_operator": 0,
+              "operator": "label_op",
+              "identifier": "label",
               "required": 0,
               "remember": 0,
               "multiple": false,
@@ -641,7 +683,7 @@
             "ui_name": "",
             "operator": "in",
             "value": [],
-            "group": "1",
+            "group": 1,
             "exposed": true,
             "expose": {
               "operator_id": "type_op",
@@ -675,24 +717,24 @@
               "group_items": []
             }
           },
-          "label": {
-            "id": "label",
-            "table": "bean",
-            "field": "label",
-            "relationship": "none",
+          "uid": {
+            "id": "uid",
+            "table": "users",
+            "field": "uid",
+            "relationship": "user",
             "group_type": "group",
             "ui_name": "",
-            "operator": "contains",
+            "operator": "in",
             "value": "",
             "group": "1",
             "exposed": true,
             "expose": {
-              "operator_id": "label_op",
-              "label": "Label",
+              "operator_id": "uid_op",
+              "label": "Author",
               "description": "",
               "use_operator": 0,
-              "operator": "label_op",
-              "identifier": "label",
+              "operator": "uid_op",
+              "identifier": "author",
               "required": 0,
               "remember": 0,
               "multiple": false,
@@ -701,7 +743,8 @@
                 "anonymous": 0,
                 "editor": 0,
                 "administrator": 0
-              }
+              },
+              "reduce": 0
             },
             "is_grouped": false,
             "group_info": {
@@ -825,6 +868,12 @@
             "content": "<p>\r\n    There are no blocks available.\r\n</p>",
             "format": "filtered_html",
             "tokenize": 0
+          }
+        },
+        "filter_groups": {
+          "operator": "AND",
+          "groups": {
+            "1": "AND"
           }
         }
       }

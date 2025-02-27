@@ -58,3 +58,12 @@ function bean_views_data_alter(&$data) {
     ),
   );
 }
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function bean_form_views_exposed_form_alter(&$form, &$form_state, $form_id) {
+  if ($form['#id'] == 'views-exposed-form-blocks-page') {
+    $form['author']['#size'] = 30;
+  }
+}
