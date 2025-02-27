@@ -6,168 +6,53 @@
  */
 
 /**
- * Interface for Plugin Classes
- */
-interface BeanTypePluginInterface {
-
-  /**
-   * Constructor
-   *
-   * Plugin info should be called using bean_fetch_plugin_info().
-   *
-   * @abstract
-   *
-   * @param  $plugin_info array of information from the ctools plugin.
-   */
-  public function __construct($plugin_info);
-
-  /**
-   * Get the ctools plugin info.
-   *
-   * If you pass in a key, then the key from the plugin info will be returned
-   * otherwise the entire plugin will be returned
-   *
-   * @abstract
-   *
-   * @param  $key
-   * @return array of plugin info for value froma key
-   */
-  public function getInfo($key = NULL);
-
-  /**
-   * Build the URL string for the plugin
-   *
-   * @abstract
-   *
-   * @return url
-   */
-  public function buildURL();
-
-  /**
-   * Get the label name of the plugin
-   *
-   * @abstract
-   *
-   * @return label of the type
-   */
-  public function getLabel();
-
-  /**
-   * Get the description of the plugin
-   *
-   * @abstract
-   *
-   * @return
-   *  description of the type
-   */
-  public function getDescription();
-
-  /**
-   * Set the Bean object for later use
-   *
-   * @abstract
-   *
-   * @param Bean $bean
-   */
-  public function setBean($bean);
-
-  /**
-   * Is this type editable?
-   *
-   * @abstract
-   *
-   * @return boolean
-   */
-  public function isEditable();
-
-  /**
-   * Define the form values and their defaults
-   */
-  public function values();
-
-  /**
-   * The Plugin Form
-   *
-   * The Bean object will be either loaded from the database or filled with the defaults.
-   *
-   * @param $bean
-   * @param $form
-   * @param $form_state
-   * @return array
-   *  form array
-   */
-  public function form($bean, $form, &$form_state);
-
-  /**
-   * Validate function for bean type form
-   *
-   * @abstract
-   *
-   * @param  $values
-   * @param $form_state
-   */
-  public function validate($values, &$form_state);
-
-  /**
-   * React to a bean being saved
-   *
-   * @abstract
-   *
-   * @param Bean $bean
-   */
-  public function submit(Bean $bean);
-
-  /**
-   * Return the block content.
-   *
-   * @abstract
-   *
-   * @param        $bean
-   *   The bean object being viewed.
-   * @param        $content
-   *   The default content array created by Entity API.  This will include any
-   *   fields attached to the entity.
-   * @param string $view_mode
-   *   The view mode passed into $entity->view().
-   *
-   * @param null   $langcode
-   *
-   * @return
-   *   Return a renderable content array.
-   */
-  public function view($bean, $content, $view_mode = 'default', $langcode = NULL);
-}
-
-/**
  * The Bean entity class
  */
 class Bean extends Entity {
-  protected $entityInfo; // stores the info provided in hook_entity_info() for this entity.
+  protected $entityInfo; // Stores the info provided in hook_entity_info() for this entity.
   protected $idKey; // Stores the key where the id is stored.
   protected $nameKey; // Stores the key where the name of the entity is stored.
+  protected $plugin;
 
   public $label;
   public $description;
   public $title;
-  public $type;
   public $data;
   public $delta;
   public $view_mode;
   public $bid;
   public $vid;
-  public $created;
-  public $changed;
   public $log;
   public $uid;
   public $default_revision;
   public $revisions = array();
-  protected $plugin;
+
+  /**
+   * The Unix timestamp for the date the Bean was created.
+   *
+   * @var integer
+   */
+  public $created;
+
+  /**
+   * The Unix timestamp for the date the Bean was changed/modified.
+   *
+   * @var integer
+   */
+  public $changed;
+
+  /**
+   * The Bean type.
+   *
+   * @var string
+   */
+  public $type;
 
   /**
    * Get Plugin info
    *
    * @param $key
-   *  The plugin key to get the info for.
+   *   The plugin key to get the info for.
    *
    * @return array|null
    */
@@ -179,6 +64,9 @@ class Bean extends Entity {
     return NULL;
   }
 
+  /**
+ *
+ */
   public function __construct(array $values = array()) {
     // If this is new then set the type first.
     if (isset($values['is_new'])) {
@@ -198,17 +86,39 @@ class Bean extends Entity {
    *
    * Returns the id of this entity.
    */
+  public function internalIdentifier() {
+    return isset($this->{$this->idKey}) ? $this->{$this->idKey} : NULL;
+  }
+
+  /**
+   * Implements EntityInterface::id().
+   *
+   * Returns the entity identifier (the entity's machine name or numeric ID).
+   *
+   * @return
+   *   The identifier of the entity, or NULL if the entity does not yet have
+   *   an identifier.
+   */
   public function id() {
+    return $this->identifier();
+  }
+
+  /**
+   * Returns the delta of this entity.
+   */
+  public function identifier() {
     return isset($this->{$this->nameKey}) ? $this->{$this->nameKey} : NULL;
   }
 
   /**
-   * {@inheritdoc}
-   *
-   * Since this is a configuration entity, there is no need to provide a uri.
-   * Configuration entities don't have a 'page' for viewing them.
+   * Implements EntityInterface::uri().
    */
-  function uri() { }
+  function uri() {
+    return array(
+      'path' => 'block/' . strtolower($this->id()),
+      'options' => array(),
+    );
+  }
 
   /**
    * Implements EntityInterface::entityType().
@@ -218,7 +128,7 @@ class Bean extends Entity {
   }
 
   /**
-   * {@inheritdoc}
+   * Implements EntityInterface::label().
    *
    * Return the human label for this entity.
    */
@@ -226,10 +136,23 @@ class Bean extends Entity {
     return $this->{$this->entityInfo['entity keys']['label']};
   }
 
+  /**
+   * Implements EntityInterface::bundle().
+   */
+  public function bundle() {
+    return $this->type;
+  }
+
+  /**
+ *
+ */
   public function adminTitle() {
     return filter_xss_admin($this->label);
   }
 
+  /**
+ *
+ */
   protected function setUp() {
     parent::setUp();
 
@@ -286,14 +209,6 @@ class Bean extends Entity {
   }
 
   /**
-   * Override this in order to implement a custom default URI and specify
-   * 'entity_class_uri' as 'uri callback' hook_entity_info().
-   */
-  protected function defaultUri() {
-    return array('path' => 'block/' . strtolower($this->id()));
-  }
-
-  /**
    * Get the default label
    *
    * @return string
@@ -334,14 +249,14 @@ class Bean extends Entity {
    * URL string
    */
   public function url() {
-    $uri = $this->defaultUri();
+    $uri = $this->uri();
     return $uri['path'];
   }
 
   /**
    * Build the URL string
    */
-  protected function buildURL($type) {
+  protected function buildURL(string $type) {
     $url = $this->url();
     return $url . '/' . $type;
   }
@@ -354,14 +269,14 @@ class Bean extends Entity {
   }
 
   /**
-   * View URL
+   * Edit URL
    */
   public function editURL() {
     return $this->buildURL('edit');
   }
 
   /**
-   * View URL
+   * Delete URL
    */
   public function deleteURL() {
     return $this->buildURL('delete');
@@ -389,13 +304,14 @@ class Bean extends Entity {
   /**
    * Generate an array for rendering the entity.
    *
-   * @see entity_view()
+   * @see entity_plus_view()
    */
   public function view($view_mode = 'default', $langcode = NULL, $page = NULL) {
     $content = parent::view($view_mode, $langcode);
     if (empty($this->plugin)) {
       return $content;
     }
+    $content = $this->plugin->view($this, $content, $view_mode, $langcode);
     return $this->plugin->view($this, $content, $view_mode, $langcode);
   }
 
@@ -493,91 +409,3 @@ class Bean extends Entity {
     return $this;
   }
 }
-
-class BeanEntityController extends EntityPlusControllerExportable {
-  protected function setPlugin(Bean $bean) {
-    static $plugins = array();
-
-    if (empty($plugins[$bean->type])) {
-      $plugins[$bean->type] = bean_load_plugin_class($bean->type);
-      $bean->loadUp($plugins[$bean->type]);
-    }
-  }
-
-  protected function attachLoad(&$queried_entities, $revision_id = FALSE) {
-    foreach ($queried_entities as $entity) {
-      $this->setPlugin($entity);
-    }
-    parent::attachLoad($queried_entities, $revision_id);
-  }
-
-  public function delete($ids, DatabaseTransaction $transaction = NULL) {
-    $beans = $ids ? $this->load($ids) : array();
-
-    $deltas = array();
-    foreach ($beans as $bean) {
-      if ($bean->id()) {
-        field_attach_delete('bean', $bean);
-
-        $deltas[] = $bean->id();
-      }
-    }
-
-    // @todo: Shortcutting around this section for now. Is it still required
-    //  in Backdrop, given that custom blocks are now in configuration?
-    if (0 && !empty($deltas)) {
-      try {
-        // @see block_custom_block_delete_submit()
-        if (module_exists('block')) {
-          db_delete('block')
-            ->condition('module', 'bean')
-            ->condition('delta', $deltas)
-            ->execute();
-          db_delete('block_role')
-            ->condition('module', 'bean')
-            ->condition('delta', $deltas)
-            ->execute();
-
-          // @see node_form_block_custom_block_delete_submit()
-          db_delete('block_node_type')
-            ->condition('module', 'bean')
-            ->condition('delta', $deltas)
-            ->execute();
-        }
-      }
-      catch (Exception $e) {
-        if (isset($transaction)) {
-          $transaction->rollback();
-        }
-        watchdog_exception('bean', $e);
-        throw $e;
-      }
-    }
-    parent::delete($ids, $transaction);
-  }
-
-  /**
-   * Overridden to add Rules integration back in.
-   */
-  public function invoke($hook, $entity) {
-    parent::invoke($hook, $entity);
-
-    // Invoke rules.
-    if (module_exists('rules')) {
-      rules_invoke_event($this->entityType() . '_' . $hook, $entity);
-    }
-  }
-
-  protected function saveRevision($entity) {
-    global $user;
-
-    $org_uid = $entity->uid;
-    $entity->uid = $user->uid;
-    $return = parent::saveRevision($entity);
-    $entity->uid = $org_uid;
-
-    return $return;
-  }
-}
-
-class BeanException extends Exception { }
