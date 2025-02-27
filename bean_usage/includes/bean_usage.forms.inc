@@ -14,7 +14,7 @@ function bean_usage_settings() {
     '#collapsible' => FALSE,
   );
 
-  $form['bean_usage_results']['bean_usage_results_per_page'] = array(
+  $form['bean_usage_results']['results_per_page'] = array(
     '#title' => t('Results per page'),
     '#description' => t('How many results display per page on the bean usage page'),
     '#type' => 'select',
@@ -30,7 +30,7 @@ function bean_usage_settings() {
       '45' => 45,
       '50' => 50,
     ),
-    '#default_value' => config_get('bean_usage.settings', 'bean_usage_results_per_page'),
+    '#default_value' => config_get('bean_usage.settings', 'results_per_page'),
   );
 
   return system_settings_form($form);

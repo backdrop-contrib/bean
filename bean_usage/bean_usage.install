@@ -11,7 +11,7 @@
  */
 function bean_usage_update_1000() {
   $config = config('bean_usage.settings');
-  $config->set('bean_usage_results_per_page', update_variable_get('bean_usage_results_per_page', '30'));
+  $config->set('results_per_page', update_variable_get('bean_usage_results_per_page', '30'));
   $config->save();
 
   update_variable_del('bean_usage_results_per_page');
