@@ -206,9 +206,9 @@ function bean_admin_ui_type_form_submit(&$form, &$form_state) {
   $config->set('description', $form_state['values']['description']);
   $config->save();
 
-  // Clear the site caches so that the new "manage fields" and "display fields"
-  // pages for the new bean type work.
-  backdrop_flush_all_caches();
+  // Clear the field and entity caches so that the new "manage fields" and
+  // "display fields" pages for the new bean type work.
+  bean_reset();
 }
 
 /**

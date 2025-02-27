@@ -139,7 +139,7 @@ function _bean_admin_default_plugin() {
       'info_file' => TRUE,
       'class' => 'BeanCustom',
       'parent' => 'bean',
-      'file' => 'BeanCustom.class.php',
+      'file' => 'bean_custom.class.php',
       'path' => backdrop_get_path('module', 'bean_admin_ui') . '/plugins',
     ),
   );
@@ -166,6 +166,6 @@ function bean_admin_ui_modules_enabled($modules) {
  */
 function bean_admin_ui_autoload_info() {
   return array(
-    'BeanCustom' => 'plugins/BeanCustom.class.php',
+    'BeanCustom' => 'plugins/bean_custom.class.php',
   );
 }

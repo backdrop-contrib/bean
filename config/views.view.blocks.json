@@ -5,6 +5,7 @@
   "tag": "",
   "disabled": false,
   "base_table": "bean",
+  "module": "bean",
   "human_name": "Blocks",
   "core": "1.x",
   "display": {

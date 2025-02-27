@@ -294,6 +294,7 @@ function bean_form_submit($form, &$form_state) {
     $bean->default_revision = TRUE;
   }
 
+  // @todo: check if these are looking at the right values here and below.
   $insert = $bean->id();
   field_attach_submit('bean', $bean, $form, $form_state);
   $bean->save();
@@ -317,7 +318,7 @@ function bean_form_submit($form, &$form_state) {
     backdrop_set_message(t('@type %title has been updated.', $t_args));
   }
 
-  if ($bean->id()) {
+  if ($bean->internalIdentifier()) {
     $form_state['redirect'] = $bean->viewURL();
   }
   else {

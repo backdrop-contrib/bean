@@ -201,6 +201,9 @@ function bean_schema() {
     ),
   );
 
+  $schema['cache_entity_bean'] = backdrop_get_schema_unprocessed('system', 'cache');
+  $schema['cache_entity_bean']['description'] = 'Entity Cache table for the Bean module.';
+
   return $schema;
 }
 
@@ -211,29 +214,6 @@ function bean_uninstall() {
   // Bypass entity_load() as we cannot use it here.
   foreach (field_info_bundles('bean') as $bean_type => $bean_info) {
     field_attach_delete_bundle('bean', $bean_type);
-  }
-}
-
-/**
- * Implements hook_disable().
- */
-function bean_disable() {
-  // Remove all of the currently placed blocks
-
-  // Delete any blocks
-  // @see block_custom_block_delete_submit()
-  if (module_exists('block')) {
-    db_delete('block')
-      ->condition('module', 'bean')
-      ->execute();
-    db_delete('block_role')
-      ->condition('module', 'bean')
-      ->execute();
-
-    // @see node_form_block_custom_block_delete_submit()
-    db_delete('block_node_type')
-      ->condition('module', 'bean')
-      ->execute();
   }
 }
 
@@ -257,4 +237,14 @@ function bean_update_1000() {
   update_variable_del('bean_uid');
   update_variable_del('bean_ctools_separate');
   update_variable_del('bean_ctools_prefix');
+
+  // Ensure entitycache table is created for Bean.
+  $cache_table = backdrop_get_schema_unprocessed('system', 'cache');
+  $cache_table['description'] = 'Entity Cache table for the Bean module.';
+  if (db_table_exists('cache_entity_bean')) {
+    db_drop_table('cache_entity_bean');
+  }
+  db_create_table('cache_entity_bean', $table);
+
+  // @todo: Convert existing bean types to config.
 }

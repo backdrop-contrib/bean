@@ -91,4 +91,11 @@ class BeanCustom extends BeanPlugin {
     return str_replace('_', '-', $this->type);
   }
 
+  /**
+   * View
+   */
+  public function view($bean, $content, $view_mode = 'default', $langcode = NULL) {
+    return $content;
+  }
+
 }

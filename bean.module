@@ -28,6 +28,8 @@ function bean_entity_info() {
     'bean' => array(
       'label' => t('Block'),
       'entity class' => 'Bean',
+      'entity cache' => TRUE,
+      'field cache' => FALSE,
       'controller class' => 'BeanEntityController',
       'module' => 'bean',
       // This class provides integration with the Inline entity form module.
@@ -286,7 +288,7 @@ function bean_menu() {
  * Implements hook_plugin_manager_plugin_directory().
  *
  * Inform Plugin Manager about our panelizer plugin.
- * @todo: Convert this to a layouts plugin.
+ * @todo: Convert this to a layouts plugin?
  */
 function bean_plugin_manager_plugin_directory($module, $plugin) {
   if (in_array($module, array('panelizer'))) {
@@ -299,16 +301,16 @@ function bean_plugin_manager_plugin_directory($module, $plugin) {
  */
 function bean_autoload_info() {
   return array(
-    'BeanTypePluginInterface' => 'includes/bean.core.inc',
-    'Bean' => 'includes/bean.core.inc',
-    'BeanEntityController' => 'includes/bean.core.inc',
-    'BeanException' => 'includes/bean.core.inc',
-    'BeanMetadataController' => 'includes/bean.info.inc',
-    'BeanInlineEntityFormController' => 'includes/bean.inline_entity_form.inc',
-    'EntityTranslationBeanHandler' => 'includes/translation.handler.bean.inc',
-    'BeanDefault' => 'plugins/BeanDefault.class.php',
-    'BeanPlugin' => 'plugins/BeanPlugin.class.php',
-    'PanelizerEntityBean' => 'plugins/entity/PanelizerEntityBean.class.php',
+    'BeanTypePluginInterface' => 'includes/bean_type_plugin_interface.class.inc',
+    'Bean' => 'includes/bean.class.inc',
+    'BeanEntityController' => 'includes/bean_entity_controller.class.inc',
+    'BeanException' => 'includes/bean_exception.class.inc',
+    'BeanMetadataController' => 'includes/bean_metadata_controller.class.inc',
+    'BeanInlineEntityFormController' => 'includes/bean_inline_entity_form_controller.class.inc',
+    'EntityTranslationBeanHandler' => 'includes/entity_translation_bean_handler.class.inc',
+    'BeanDefault' => 'plugins/bean_default.class.php',
+    'BeanPlugin' => 'plugins/bean_plugin.class.php',
+    'PanelizerEntityBean' => 'plugins/entity/panelizer_entity_bean.class.php',
     'views_handler_field_bean_delete_link' => 'views/views_handler_field_bean_delete_link.inc',
     'views_handler_field_bean_edit_link' => 'views/views_handler_field_bean_edit_link.inc',
     'views_handler_field_bean_operations' => 'views/views_handler_field_bean_operations.inc',
@@ -472,24 +474,29 @@ function bean_type_save($type) {
  * Reset the static variables and caches.
  */
 function bean_reset($skip_menu_rebuild = FALSE, $rehash_blocks = FALSE) {
-  cache_clear_all('plugins:bean:types', 'cache');
+  // Clear Plugin Manager statics and caches.
+  plugin_manager_get_plugins_reset();
+  cache_clear_all('plugin_manager_files:', 'cache', TRUE);
+  cache_clear_all('plugins:bean:types', 'cache', TRUE);
 
   // Invoke modules to clear their caches.
   foreach (module_implements('bean_cache_clear') as $module) {
     module_invoke($module, 'bean_cache_clear');
   }
 
+  // Rebuild plugin types and the menu.
+  plugin_manager_get_plugin_type_info(TRUE);
   if (!$skip_menu_rebuild) {
     menu_rebuild();
   }
 
-  // Rehashes blocks for active themes. This will populate the blocks table and allow
-  // modules like blockreference to work properly.
-  if ($rehash_blocks && module_exists('block')) {
-    cache_clear_all();
-    // @todo: Can this be better targeted?
-    // block_flush_caches();
-  }
+  // @todo: Determine for certain if anything needs to be done with the below.
+  // -----------------------------------------------------------
+  // Rehashes blocks for active themes. This will populate the blocks table and
+  // allow modules like blockreference to work properly.
+  // if ($rehash_blocks && module_exists('block')) {
+  //   block_flush_caches();
+  // }
 }
 
 /**
@@ -508,10 +515,6 @@ function bean_bean_cache_clear() {
   // Flush caches.
   cache_clear_all('bean_plugins', 'cache');
   cache_clear_all('bean_block_info', 'cache');
-
-  if (module_exists('block')) {
-    // cache_clear_all(NULL, 'cache_block');
-  }
   cache_clear_all(NULL, 'cache_page');
 }
 
@@ -522,10 +525,10 @@ function bean_bean_cache_clear() {
  */
 function bean_cache_clear_block($bean = NULL) {
   if (isset($bean->delta)) {
-    // cache_clear_all('bean:' . $bean->delta . ':', 'cache_block', TRUE);
+    // cache_clear_all('bean:' . $bean->delta . ':', 'cache_block', TRUE);.
   }
   else {
-    // cache_clear_all('bean:', 'cache_block', TRUE);
+    // cache_clear_all('bean:', 'cache_block', TRUE);.
   }
 
   cache_clear_all('bean_block_info', 'cache');
@@ -608,11 +611,11 @@ function bean_get_all_beans() {
 /**
  * Fetch a bean object.
  *
- * @param $bid
+ * @param int $bid
  *   Integer specifying the bean id.
- * @param $reset
+ * @param bool $reset
  *   A boolean indicating that the internal cache should be reset.
- * @return
+ * @return Bean|bool
  *   A fully-loaded $bean object or FALSE if it cannot be loaded.
  *
  * @see bean_load_multiple()
@@ -918,7 +921,7 @@ function bean_view(Bean $bean, $view_mode = 'default', $langcode = NULL) {
 function bean_view_callback($entities, $view_mode, $langcode, $entity_type) {
   $render = array();
   foreach ($entities as $key => $entity) {
-    $id = entity_id($entity_type, $entity);
+    $id = entity_plus_id($entity_type, $entity);
     $render[$entity_type][$id] = bean_view($entity, $view_mode, $langcode);
   }
   return $render;
@@ -1184,7 +1187,7 @@ function bean_views_api() {
  */
 function bean_flush_caches() {
   bean_reset(TRUE);
-  return array();
+  return array('cache_entity_bean');
 }
 
 /**
