@@ -47,4 +47,14 @@ function bean_views_data_alter(&$data) {
       'handler' => 'views_handler_field_bean_operations',
     ),
   );
+
+  $data['bean']['bulk_form'] = array(
+    'title' => t('Bulk operations'),
+    'help' => t('Provides a checkbox on each row and a form for executing bulk actions on Beans.'),
+    'real field' => 'bid',
+    'field' => array(
+      'handler' => 'views_handler_field_bulk_form',
+      'click sortable' => FALSE,
+    ),
+  );
 }

@@ -928,6 +928,19 @@ function bean_view_callback($entities, $view_mode, $langcode, $entity_type) {
 }
 
 /**
+ * Implements hook_action_info().
+ */
+function bean_action_info() {
+  return array(
+    'bean_delete_action' => array(
+      'label' => t('Delete Bean'),
+      'type' => 'bean',
+      'callback' => 'bean_delete',
+    ),
+  );
+}
+
+/**
  * Implements hook_block_info().
  */
 function bean_block_info() {
