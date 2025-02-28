@@ -9,9 +9,11 @@
  * Bean view page
  */
 function bean_view_page(Bean $bean) {
-  $title = $bean->label() ? $bean->label() : $bean->adminTitle();
+  $title = $bean->getTitle();
+  if (!empty($title)) {
+    backdrop_set_title($title);
+  }
   $view_mode = ($bean->view_mode) ? $bean->view_mode : 'default';
-  backdrop_set_title($title);
 
   return bean_view($bean, $view_mode);
 }
@@ -21,7 +23,7 @@ function bean_view_page(Bean $bean) {
  */
 function bean_edit(Bean $bean) {
   $type = bean_fetch_plugin_info($bean->type);
-  backdrop_set_title(t('Edit @type: @title', array('@type' => $type['label'], '@title' => $bean->label)), PASS_THROUGH);
+  backdrop_set_title(t('Edit @beantype: @title', array('@beantype' => $type['label'], '@title' => $bean->getLabel())), PASS_THROUGH);
   return backdrop_get_form('bean_form', $bean);
 }
 
@@ -83,7 +85,7 @@ function theme_bean_add_list($variables) {
     foreach ($content as $item) {
       $title = l(t('<span class="icon"></span>@label', array('@label' => $item->getLabel())), 'block/add/' . $item->buildURL(), array('html' => TRUE));
       $description = (!is_array($item->getDescription())) ? '<div class="description">' . $item->getDescription() . '</div>' : '';
-      //creative way to setup sorting by label; add number to prevent duplicate keys
+      // Creative way to setup sorting by label; add number to prevent duplicate keys.
       $blocks[str_replace(' ', '', $item->getLabel()) . '_' . $i] = '<li>' . $title . $description . '</li>';
       $i++;
     }
@@ -117,7 +119,7 @@ function bean_form($form, &$form_state, Bean $bean, string $type = NULL) {
     $bean = $form_state['bean'];
   }
 
-  // Add entity api defaults
+  // Add entity api defaults.
   $form['#entity_type'] = 'bean';
   $form['bean']['#value'] = $bean;
 
@@ -125,7 +127,7 @@ function bean_form($form, &$form_state, Bean $bean, string $type = NULL) {
     '#type' => 'textfield',
     '#title' => t('Label'),
     '#required' => TRUE,
-    '#default_value' => $bean->label,
+    '#default_value' => $bean->getLabel(),
     '#description' => t('Name that displays in the admin interface'),
     '#weight' => -10,
   );
@@ -134,7 +136,7 @@ function bean_form($form, &$form_state, Bean $bean, string $type = NULL) {
     '#type' => 'textfield',
     '#title' => t('Title'),
     '#description' => t('The Title of the block. The &lt;em&gt;, &lt;strong&gt;, &lt;i&gt; and &lt;b&gt; HTML tags are allowed, all others will be filtered out.'),
-    '#default_value' => $bean->title,
+    '#default_value' => $bean->getTitle(),
     '#weight' => -9,
   );
 
@@ -346,12 +348,12 @@ function bean_form_submit($form, &$form_state) {
 function bean_form_submit_build_bean($form, &$form_state) {
 
   // @todo Legacy support for modules that extend the bean form with form-level
-//   submit handlers that adjust $form_state['values'] prior to those values
-//   being used to update the entity. Module authors are encouraged to instead
-//   adjust the bean directly within a hook_bean_submit() implementation. For
-//   Backdrop 8, evaluate whether the pattern of triggering form-level submit
-//   handlers during button-level submit processing is worth supporting
-//   properly, and if so, add a Form API function for doing so.
+  //   submit handlers that adjust $form_state['values'] prior to those values
+  //   being used to update the entity. Module authors are encouraged to instead
+  //   adjust the bean directly within a hook_bean_submit() implementation. For
+  //   Backdrop 8, evaluate whether the pattern of triggering form-level submit
+  //   handlers during button-level submit processing is worth supporting
+  //   properly, and if so, add a Form API function for doing so.
   unset($form_state['submit_handlers']);
   form_execute_handlers('submit', $form, $form_state);
 
@@ -570,7 +572,7 @@ function bean_reset_filter() {
 /**
  * Revisions page callback
  *
- * @param $bean Bean
+ * @param Bean $bean
  */
 function bean_revisions_page(Bean $bean) {
   $bean->loadRevisions();
@@ -586,19 +588,19 @@ function bean_revisions_page(Bean $bean) {
 
   $rows = array();
 
-  // Dont' show link for default revision
+  // Dont' show link for default revision.
   $can_delete = entity_plus_access('delete', 'bean', $bean);
   $can_edit = entity_plus_access('update', 'bean', $bean);
 
   foreach ($bean->revisions as $rev) {
-    $active = $rev->vid == $bean->vid?TRUE : FALSE;
+    $active = $rev->vid == $bean->vid ? TRUE : FALSE;
     $user = user_load($rev->uid);
     $rows[$rev->vid]  = array(
-      'vid' => $active?t('@label (Current Revision)', array('@label' => $rev->vid)) : $rev->vid,
+      'vid' => $active ? t('@label (Current Revision)', array('@label' => $rev->vid)) : $rev->vid,
       'title' => array(
         'data' => array(
           '#type' => 'link',
-          '#title' => $rev->label,
+          '#title' => $rev->label(),
           '#href' => "block/{$rev->delta}/revisions/{$rev->vid}",
         ),
       ),

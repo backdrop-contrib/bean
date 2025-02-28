@@ -49,22 +49,6 @@ class Bean extends Entity {
   public $type;
 
   /**
-   * Get Plugin info
-   *
-   * @param $key
-   *   The plugin key to get the info for.
-   *
-   * @return array|null
-   */
-  public function getInfo($key = NULL) {
-    if ($this->plugin instanceof BeanTypePluginInterface) {
-      return $this->plugin->getInfo($key);
-    }
-
-    return NULL;
-  }
-
-  /**
  *
  */
   public function __construct(array $values = array()) {
@@ -144,10 +128,17 @@ class Bean extends Entity {
   }
 
   /**
- *
+ * Return a sanitized version of the Bean admin label, or an empty string.
  */
-  public function adminTitle() {
-    return filter_xss_admin($this->label);
+  public function getLabel() {
+    return (!empty($this->label)) ? filter_xss_admin($this->label) : '';
+  }
+
+  /**
+ * Return a sanitized version of the Bean title, with allowed HTML elements, or an empty string.
+ */
+  public function getTitle() {
+    return (!empty($this->title)) ? filter_xss($this->title, $allowed_tags = array('em', 'strong', 'i', 'b')) : '';
   }
 
   /**
@@ -215,10 +206,10 @@ class Bean extends Entity {
    */
   protected function defaultLabel() {
     if (empty($this->title)) {
-      return $this->label;
+      return $this->getLabel();
     }
 
-    return $this->title;
+    return $this->getTitle();
   }
 
   /**
@@ -229,6 +220,22 @@ class Bean extends Entity {
   public function setDefault() {
     $this->default_revision = TRUE;
     return $this;
+  }
+
+  /**
+   * Get Plugin info
+   *
+   * @param $key
+   *   The plugin key to get the info for.
+   *
+   * @return array|null
+   */
+  public function getInfo($key = NULL) {
+    if ($this->plugin instanceof BeanTypePluginInterface) {
+      return $this->plugin->getInfo($key);
+    }
+
+    return NULL;
   }
 
   /**

@@ -25,8 +25,8 @@
 ?>
 <div class="<?php print implode(' ', $classes); ?> clearfix"<?php print backdrop_attributes($attributes); ?>>
   <?php print render($title_prefix); ?>
-  <?php if (!empty($bean->title)): ?>
-    <h2<?php (empty($title_attributes)) ? '' : print backdrop_attributes($title_attributes); ?>><?php print $bean->title ?></h2>
+  <?php if (!empty($title)): ?>
+    <h2<?php (empty($title_attributes)) ? '' : print backdrop_attributes($title_attributes); ?>><?php print $title ?></h2>
   <?php endif;?>
   <?php print render($title_suffix); ?>
   <div class="content"<?php print backdrop_attributes($content_attributes); ?>>

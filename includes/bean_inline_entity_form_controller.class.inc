@@ -83,7 +83,7 @@ class BeanInlineEntityFormController extends EntityInlineEntityFormController {
       '#type' => 'textfield',
       '#title' => t('@type Label', array('@type' => check_plain($type->getLabel()))),
       '#required' => TRUE,
-      '#default_value' => $bean->label,
+      '#default_value' => $bean->getLabel(),
       '#maxlength' => 255,
       // Check if extra fields define a weight.
       '#weight' => !empty($extra_fields['label']) ? $extra_fields['label']['weight'] : -5,
@@ -92,7 +92,7 @@ class BeanInlineEntityFormController extends EntityInlineEntityFormController {
     $entity_form['title'] = array(
       '#type' => 'textfield',
       '#title' => t('@type Title', array('@type' => check_plain($type->getLabel()))),
-      '#default_value' => $bean->title,
+      '#default_value' => $bean->getTitle(),
       '#maxlength' => 255,
       // Check if extra fields define a weight.
       '#weight' => !empty($extra_fields['title']) ? $extra_fields['title']['weight'] : -5,
@@ -225,7 +225,7 @@ class BeanInlineEntityFormController extends EntityInlineEntityFormController {
     }
 
     // Set title since it will be auto generated based on the parent entity.
-    if (empty($ief_form_state['bean']->title) && $this->settings['parent_sync_title']) {
+    if (empty($ief_form_state['bean']->getTitle()) && $this->settings['parent_sync_title']) {
       $ief_form_state['values']['title'] = $display_labels['singular'];
     }
 

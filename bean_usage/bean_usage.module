@@ -111,7 +111,7 @@ function bean_usage_output($bean = NULL) {
     $bean = bean_load($bean);
   }
   if (is_object($bean)) {
-    backdrop_set_title($bean->label . ' Usage');
+    backdrop_set_title($bean->getLabel() . ' Usage');
     $bean_delta = $bean->id();
   }
 
@@ -144,8 +144,8 @@ function bean_usage_output($bean = NULL) {
         'machine_name' => $delta,
       ));
       $allrows[] = array(
-        'label' => l($bean->label, $bean->editURL()),
-        'title' => $bean->title,
+        'label' => l($bean->getLabel(), $bean->editURL()),
+        'title' => $bean->getTitle(),
         'type' => $bean->type,
         'usage' => $usage_list,
       );
@@ -156,8 +156,8 @@ function bean_usage_output($bean = NULL) {
     $usage = layout_get_block_usage('bean', $bean_delta);
     $usage_list = $usage ? theme('item_list', array('items' => $usage)) : t('Not in use');
     $allrows[] = array(
-      'label' => $bean->label,
-      'title' => $bean->title,
+      'label' => $bean->getLabel(),
+      'title' => $bean->getTitle(),
       'type' => $bean->type,
       'usage' => $usage_list,
     );

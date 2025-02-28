@@ -349,7 +349,7 @@ function bean_admin_paths() {
  * Title of the bean
  */
 function bean_page_title($bean) {
-  return $bean->label;
+  return $bean->label();
 }
 
 /**
@@ -960,7 +960,8 @@ function bean_block_info() {
   $beans = bean_get_all_beans();
   foreach ($beans as $bean) {
     $blocks[$bean->delta] = array(
-      'info' => $bean->adminTitle(),
+      'info' => $bean->getLabel(),
+      'description' => $bean->getTitle() . ' (' . $bean->type . ')',
       'cache' => $bean->getInfo('cache_level'),
     );
   }
@@ -987,7 +988,7 @@ function bean_block_view($delta = '') {
 
     $return = array(
       'content' => $content,
-      'subject' => isset($bean->title) ? filter_xss($bean->title, $allowed_tags = array('em', 'strong', 'i', 'b')) : '',
+      'subject' => $bean->getTitle(),
     );
   }
 
@@ -1092,9 +1093,19 @@ function bean_theme() {
       'template' => 'bean',
     ),
     'bean_add_list' => array(
-      'variables' => array('content' => NULL),
+      'variables' => array(
+        'content' => NULL,
+      ),
     ),
   );
+}
+
+/**
+ * Implements hook_preprocess_bean().
+ */
+function template_preprocess_bean(&$variables) {
+  $bean = $variables['bean'];
+  $variables['title'] = $bean->getTitle();
 }
 
 /**
