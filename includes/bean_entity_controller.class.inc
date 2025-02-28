@@ -4,7 +4,11 @@
  * @file
  * Bean entity controller class.
  */
-class BeanEntityController extends EntityPlusControllerExportable {
+
+/**
+ *
+ */
+class BeanEntityController extends EntityPlusController {
   /**
  *
  */
@@ -35,60 +39,18 @@ class BeanEntityController extends EntityPlusControllerExportable {
 
     $deltas = array();
     foreach ($beans as $bean) {
-      if ($bean->id()) {
+      if ($bean->internalIdentifier()) {
         field_attach_delete('bean', $bean);
 
-        $deltas[] = $bean->id();
+        $deltas[] = $bean->identifier();
       }
     }
 
-    // @todo: Shortcutting around this section for now. Is it still required
-    //  in Backdrop, given that custom blocks are now in configuration?
-    if (0 && !empty($deltas)) {
-      try {
-        // @see block_custom_block_delete_submit()
-        if (module_exists('block')) {
-          db_delete('block')
-            ->condition('module', 'bean')
-            ->condition('delta', $deltas)
-            ->execute();
-          db_delete('block_role')
-            ->condition('module', 'bean')
-            ->condition('delta', $deltas)
-            ->execute();
-
-          // @see node_form_block_custom_block_delete_submit()
-          db_delete('block_node_type')
-            ->condition('module', 'bean')
-            ->condition('delta', $deltas)
-            ->execute();
-        }
-      }
-      catch (Exception $e) {
-        if (isset($transaction)) {
-          $transaction->rollback();
-        }
-        watchdog_exception('bean', $e);
-        throw $e;
-      }
-    }
     parent::delete($ids, $transaction);
   }
 
   /**
-   * Overridden to add Rules integration back in.
-   */
-  public function invoke($hook, $entity) {
-    parent::invoke($hook, $entity);
-
-    // Invoke rules.
-    if (module_exists('rules')) {
-      rules_invoke_event($this->entityType() . '_' . $hook, $entity);
-    }
-  }
-
-  /**
-   * Implements EntityPlusControllerExportable::resetCache().
+   * Implements EntityPlusController::resetCache().
    */
   public function resetCache(array $ids = NULL) {
     bean_reset(TRUE);
@@ -96,8 +58,8 @@ class BeanEntityController extends EntityPlusControllerExportable {
   }
 
   /**
- *
- */
+   * Implements EntityPlusController::saveRevision().
+   */
   protected function saveRevision($entity) {
     global $user;
 

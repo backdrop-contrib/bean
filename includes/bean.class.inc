@@ -84,7 +84,7 @@ class Bean extends Entity {
    *   an identifier.
    */
   public function id() {
-    return $this->identifier();
+    return $this->internalIdentifier();
   }
 
   /**
@@ -99,7 +99,7 @@ class Bean extends Entity {
    */
   function uri() {
     return array(
-      'path' => 'block/' . strtolower($this->id()),
+      'path' => 'block/' . strtolower($this->identifier()),
       'options' => array(),
     );
   }
@@ -409,7 +409,7 @@ class Bean extends Entity {
    */
   public function loadRevisions() {
     $this->revisions = db_select('bean_revision', 'br')
-                        ->condition('delta', $this->id())
+                        ->condition('delta', $this->identifier())
                         ->fields('br')
                         ->execute();
 

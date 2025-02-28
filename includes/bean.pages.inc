@@ -297,7 +297,7 @@ function bean_form_submit($form, &$form_state) {
   }
 
   // @todo: check if these are looking at the right values here and below.
-  $insert = $bean->id();
+  $insert = $bean->internalIdentifier();
   field_attach_submit('bean', $bean, $form, $form_state);
   $bean->save();
   $form_state['values']['bean'] = $bean;
@@ -320,7 +320,7 @@ function bean_form_submit($form, &$form_state) {
     backdrop_set_message(t('@type %title has been updated.', $t_args));
   }
 
-  if ($bean->internalIdentifier()) {
+  if ($bean->identifier()) {
     $form_state['redirect'] = $bean->viewURL();
   }
   else {
@@ -600,7 +600,7 @@ function bean_revisions_page(Bean $bean) {
       'title' => array(
         'data' => array(
           '#type' => 'link',
-          '#title' => $rev->label(),
+          '#title' => $rev->label,
           '#href' => "block/{$rev->delta}/revisions/{$rev->vid}",
         ),
       ),

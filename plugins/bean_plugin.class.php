@@ -5,6 +5,9 @@
  * Base Plugin Class
  */
 
+/**
+ *
+ */
 abstract class BeanPlugin implements BeanTypePluginInterface {
   protected $plugin_info;
   public $type;
@@ -41,6 +44,9 @@ abstract class BeanPlugin implements BeanTypePluginInterface {
     return $this->getInfo('description');
   }
 
+  /**
+ *
+ */
   public function __construct($plugin_info) {
     $this->plugin_info = $plugin_info;
     $this->type = $plugin_info['name'];
@@ -57,6 +63,9 @@ abstract class BeanPlugin implements BeanTypePluginInterface {
     );
   }
 
+  /**
+ *
+ */
   public function form($bean, $form, &$form_state) {
     return array();
   }
@@ -103,7 +112,7 @@ abstract class BeanPlugin implements BeanTypePluginInterface {
   public function view($bean, $content, $view_mode = 'default', $langcode = NULL) {
     if (!empty($content) && module_exists('contextual')) {
       $content['#contextual_links']['bean'] = array(
-        'block', array($bean->id(), 'edit')
+        'block', array($bean->identifier(), 'edit'),
       );
     }
     return $content;

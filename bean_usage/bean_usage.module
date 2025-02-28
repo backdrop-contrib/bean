@@ -112,7 +112,7 @@ function bean_usage_output($bean = NULL) {
   }
   if (is_object($bean)) {
     backdrop_set_title($bean->getLabel() . ' Usage');
-    $bean_delta = $bean->id();
+    $bean_delta = $bean->identifier();
   }
 
   if (!$delta_specific) {

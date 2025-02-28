@@ -55,15 +55,15 @@ class BeanTests extends BeanSetup {
 
     // Load by delta.
     $delta_bean = bean_load_delta('test_bean2', TRUE);
-    $this->assertEqual($delta_bean->id(), $bean->id(), t('Bean loaded by delta'));
+    $this->assertEqual($delta_bean->identifier(), $bean->identifier(), t('Bean loaded by delta'));
 
     // Test devel pages.
     if (module_exists('devel')) {
-      $this->backdropGet("block/{$bean->id()}/devel");
+      $this->backdropGet("block/{$bean->identifier()}/devel");
       $this->assertResponse(200, t('Devel load page is viewable'));
       $this->assertText($bean->label(), t('Devel load page is viewable'));
 
-      $this->backdropGet("block/{$bean->id()}/devel/render");
+      $this->backdropGet("block/{$bean->identifier()}/devel/render");
       $this->assertResponse(200, t('Devel render page is viewable'));
       $this->assertText($bean->label(), t('Devel render page is viewable'));
     }
@@ -109,7 +109,7 @@ class BeanTests extends BeanSetup {
     $this->assertResponse(200, t('Bean Page is viewable'));
     $this->assertText($bean->label(), t('Bean Page is viewable'));
 
-    $this->backdropGet("block/{$bean->id()}");
+    $this->backdropGet("block/{$bean->identifier()}");
     $this->assertResponse(200, t('Legacy Bean Page is viewable'));
     $this->assertText($bean->label(), t('Legacy Bean Page is viewable'));
   }
