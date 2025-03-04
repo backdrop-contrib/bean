@@ -228,12 +228,6 @@ function bean_update_last_removed() {
  * Migrate bean variables to config.
  */
 function bean_update_1000() {
-  $config = config('bean.settings');
-  $config->set('bean_uid', update_variable_get('bean_uid', '1'));
-  $config->set('bean_separate', update_variable_get('bean_ctools_separate', TRUE));
-  $config->set('bean_prefix', update_variable_get('bean_ctools_prefix', array()));
-  $config->save();
-
   update_variable_del('bean_uid');
   update_variable_del('bean_ctools_separate');
   update_variable_del('bean_ctools_prefix');

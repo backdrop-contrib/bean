@@ -308,6 +308,7 @@ function bean_autoload_info() {
     'BeanMetadataController' => 'includes/bean_metadata_controller.class.inc',
     'BeanInlineEntityFormController' => 'includes/bean_inline_entity_form_controller.class.inc',
     'EntityTranslationBeanHandler' => 'includes/entity_translation_bean_handler.class.inc',
+    'BlockBean' => 'includes/block_bean.class.inc',
     'BeanDefault' => 'plugins/bean_default.class.php',
     'BeanPlugin' => 'plugins/bean_plugin.class.php',
     'PanelizerEntityBean' => 'plugins/entity/panelizer_entity_bean.class.php',
@@ -957,42 +958,31 @@ function bean_block_info() {
   }
 
   $blocks = array();
+  // Add a block to allow creation of new Beans of each type.
+  $bean_types = bean_get_types();
+  foreach ($bean_types as $bean_type) {
+    $label = $bean_type->getLabel();
+    $blocks['block_bean--' . $bean_type->type . '--0'] = array(
+      'info' => $label,
+      'description' => t('Add a new %type Bean block', array('%type' => $label)),
+      'class' => 'BlockBean',
+    );
+  }
+
+  // Add blocks for all existing Beans.
   $beans = bean_get_all_beans();
   foreach ($beans as $bean) {
-    $blocks[$bean->delta] = array(
+    $blocks['block_bean--' . $bean->type . '--' . $bean->id()] = array(
       'info' => $bean->getLabel(),
-      'description' => $bean->getTitle() . ' (' . $bean->type . ')',
+      'description' => 'Bean block. ' . $bean->getTitle() . ' (' . $bean->type . ')',
       'cache' => $bean->getInfo('cache_level'),
+      'class' => 'BlockBean',
     );
   }
 
   cache_set('bean_block_info', $blocks, 'cache');
 
   return $blocks;
-}
-
-/**
- * Implements hook_block_view().
- */
-function bean_block_view($delta = '') {
-  $return = array();
-  $bean = bean_load_delta($delta);
-
-  if (entity_plus_access('view', 'bean', $bean) && $bean) {
-    $content = $bean->view($bean->view_mode);
-    if (!is_array($content)) {
-      $content = array(
-        '#markup' => $content,
-      );
-    }
-
-    $return = array(
-      'content' => $content,
-      'subject' => $bean->getTitle(),
-    );
-  }
-
-  return $return;
 }
 
 /**
@@ -1101,14 +1091,6 @@ function bean_theme() {
 }
 
 /**
- * Implements hook_preprocess_bean().
- */
-function template_preprocess_bean(&$variables) {
-  $bean = $variables['bean'];
-  $variables['title'] = $bean->getTitle();
-}
-
-/**
  * Implements hook_menu_local_tasks_alter().
  */
 function bean_menu_local_tasks_alter(&$data, $router_item, $root_path) {
@@ -1173,7 +1155,7 @@ function bean_field_extra_fields() {
       'weight' => -9,
     );
     $extra['bean'][$type->type]['form']['label'] = array(
-      'label' => t('Label'),
+      'label' => t('Admin label'),
       'description' => t('Bean module element'),
       'weight' => -10,
     );
@@ -1258,44 +1240,10 @@ function bean_admin_menu_output_build(&$content) {
  * Implements hook_config_info().
  */
 function bean_config_info() {
-  $prefixes['bean.settings'] = array(
-    'label' => t('Bean settings'),
-    'group' => t('Configuration'),
+  $prefixes['bean.type'] = array(
+    'name_key' => 'type',
+    'label_key' => 'name',
+    'group' => t('Bean block types'),
   );
   return $prefixes;
-}
-
-/**
- * CTools callback for Bean blocks.
- * @todo: Remove CTools hook.
- *
- * @see _ctools_block_content_type_content_type() in block.inc.
- * https://git.drupalcode.org/project/ctools/-/blob/7.x-1.x/plugins/content_types/block/block.inc#L65-83
- */
-function bean_ctools_block_info($module, $delta, &$info) {
-  $config = config('bean.settings');
-
-  // Use the core block icon.
-  $info['icon'] = 'icon_contrib_block.png';
-
-  // Load the full bean.
-  $bean = bean_load_delta($delta);
-
-  // Identify the bean type.
-  $bean_types = bean_get_types();
-
-  // By default store all beans in the Blocks category.
-  $info['category'] = t('Blocks');
-
-  // If the bean type loaded correctly (should always happen).
-  if (isset($bean_types[$bean->type])) {
-    // Optionally group the blocks by their bean type.
-    if ($config->get('bean_separate')) {
-      $info['category'] = t('Blocks') . ': ' . $bean_types[$bean->type]->getLabel();
-    }
-    // Optionally prefix the block with the bean type's label.
-    if ($config->get('bean_prefix')) {
-      $info['title'] = $bean_types[$bean->type]->getLabel() . ': ' . $info['title'];
-    }
-  }
 }
