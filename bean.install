@@ -239,6 +239,4 @@ function bean_update_1000() {
     db_drop_table('cache_entity_bean');
   }
   db_create_table('cache_entity_bean', $table);
-
-  // @todo: Convert existing bean types to config.
 }
