@@ -310,10 +310,11 @@ class Bean extends Entity {
   /**
    * Generate an array for rendering the entity.
    *
-   * @see entity_plus_view()
+   * Overrides EntityInterface::view().
    */
   public function view($view_mode = 'default', $langcode = NULL, $page = NULL) {
-    $content = parent::view($view_mode, $langcode);
+    $view = entity_get_controller($this->entityType())->view(array($this->id() => $this), $view_mode, $langcode, $page);
+    $content = $view[$this->entityType()][$this->id()];
     if (empty($this->plugin)) {
       return $content;
     }
