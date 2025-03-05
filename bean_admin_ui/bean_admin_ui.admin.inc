@@ -29,10 +29,27 @@ function bean_admin_ui_admin_page() {
     $row['status'] = array('data' => $storage_status_label);
     // Edit and delete buttons.
     if ($bean_type->isEditable()) {
-      $operations['edit'] = array(
-        'title' => t('Edit'),
-        'href' => 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/edit',
+      $operations['configure'] = array(
+        'title' => t('Configure'),
+        'href' => 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/configure',
       );
+    }
+
+    if ($field_ui) {
+      // Manage fields.
+      $operations['manage_fields'] = array(
+        'title' => t('Manage fields'),
+        'href' => 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/fields',
+      );
+
+      // Display fields.
+      $operations['manage_display'] = array(
+        'title' => t('Manage display'),
+        'href' => 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/display',
+      );
+    }
+
+    if ($bean_type->isEditable()) {
       $storage_status_code = (method_exists($bean_type, 'getStorageStatus')) ? $bean_type->getStorageStatus() : BEAN_STORAGE_NORMAL;
       switch ($storage_status_code) {
         case BEAN_STORAGE_NORMAL:
@@ -52,19 +69,6 @@ function bean_admin_ui_admin_page() {
       }
     }
 
-    if ($field_ui) {
-      // Manage fields.
-      $operations['manage_fields'] = array(
-        'title' => t('Manage fields'),
-        'href' => 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/fields',
-      );
-
-      // Display fields.
-      $operations['manage_display'] = array(
-        'title' => t('Manage display'),
-        'href' => 'admin/structure/block-types/manage/' . $bean_type->buildURL() . '/display',
-      );
-    }
     $row['operations'] = array(
       'data' => array(
         '#type' => 'dropbutton',

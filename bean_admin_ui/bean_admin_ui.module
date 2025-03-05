@@ -37,7 +37,7 @@ function bean_admin_ui_menu() {
   );
 
   $items['admin/structure/block-types/manage/%bean_type'] = array(
-    'title' => 'Edit block type',
+    'title' => 'Configure block type',
     'title arguments' => array(4),
     'title callback' => 'bean_admin_ui_page_title',
     'page callback' => 'backdrop_get_form',
@@ -45,8 +45,8 @@ function bean_admin_ui_menu() {
     'access arguments' => array('administer bean types'),
     'file' => 'bean_admin_ui.admin.inc',
   );
-  $items['admin/structure/block-types/manage/%bean_type/edit'] = array(
-    'title' => 'Edit',
+  $items['admin/structure/block-types/manage/%bean_type/configure'] = array(
+    'title' => 'Configure',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['admin/structure/block-types/manage/%bean_type/delete'] = array(
