@@ -331,7 +331,7 @@ function bean_revision_title($bean) {
  * Implements hook_admin_paths().
  */
 function bean_admin_paths() {
-  if (config_get('system.performance', 'node_admin_theme')) {
+  if (config_get('system.core', 'node_admin_theme')) {
     $paths = array(
       'block/*/edit' => TRUE,
       'block/*/delete' => TRUE,
