@@ -99,43 +99,24 @@ function theme_bean_add_list($variables) {
 }
 
 /**
- * Bean form
+ * Helper to generate the simple fields needed on a Bean form without the other
+ * form elements.
  */
-function bean_form($form, &$form_state, Bean $bean, string $type = NULL) {
-
-  // During initial form build, add the bean entity to the form state for use
-  // during form building and processing. During a rebuild, use what is in the
-  // form state.
-  if (!isset($form_state['bean'])) {
-    if (!isset($bean->label)) {
-      $bean->label = NULL;
-    }
-    if (isset($type)) {
-      $bean->type = $type;
-    }
-    $form_state['bean'] = $bean;
-  }
-  else {
-    $bean = $form_state['bean'];
-  }
-
-  // Add entity api defaults.
-  $form['#entity_type'] = 'bean';
-  $form['bean']['#value'] = $bean;
-
+function bean_form_fields(Bean $bean) {
+  $form = array();
   $form['label'] = array(
     '#type' => 'textfield',
-    '#title' => t('Label'),
+    '#title' => t('Admin label'),
     '#required' => TRUE,
     '#default_value' => $bean->getLabel(),
-    '#description' => t('Name that displays in the admin interface'),
+    '#description' => t('Block label that displays in the admin interface.'),
     '#weight' => -10,
   );
 
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Title'),
-    '#description' => t('The Title of the block. The &lt;em&gt;, &lt;strong&gt;, &lt;i&gt; and &lt;b&gt; HTML tags are allowed, all others will be filtered out.'),
+    '#description' => t('The title of the block. The &lt;em&gt;, &lt;strong&gt;, &lt;i&gt; and &lt;b&gt; HTML tags are allowed, all others will be filtered out.'),
     '#default_value' => $bean->getTitle(),
     '#weight' => -9,
   );
@@ -167,7 +148,7 @@ function bean_form($form, &$form_state, Bean $bean, string $type = NULL) {
       '#title' => t('Set Revision as default'),
       '#default_value' => $bean->isActiveRevision(),
       '#states' => array(
-        // Hide if the option above is disabled, to avoid potential dataloss.
+      // Hide if the option above is disabled, to avoid potential dataloss.
         'invisible' => array(
           ':input[name="is_new_revision"]' => array('checked' => FALSE),
         ),
@@ -213,6 +194,38 @@ function bean_form($form, &$form_state, Bean $bean, string $type = NULL) {
     '#value' => $bean,
   );
 
+  return $form;
+}
+
+/**
+ * Bean form.
+ */
+function bean_form($form, &$form_state, Bean $bean, $type = NULL) {
+  if (empty($bean->plugin)) {
+    $bean->loadUp(bean_load_plugin_class($bean->type));
+  }
+  // During initial form build, add the bean entity to the form state for use
+  // during form building and processing. During a rebuild, use what is in the
+  // form state.
+  if (!isset($form_state['bean'])) {
+    if (!isset($bean->label)) {
+      $bean->label = NULL;
+    }
+    if (isset($type)) {
+      $bean->type = $type;
+    }
+    $form_state['bean'] = $bean;
+  }
+  else {
+    $bean = $form_state['bean'];
+  }
+
+  // Add entity defaults.
+  $form['#entity_type'] = 'bean';
+  $form['bean']['#value'] = $bean;
+
+  $form += bean_form_fields($bean);
+
   // Get the Bean type form.
   $form += $bean->getForm($form, $form_state);
 
@@ -254,11 +267,11 @@ function bean_form($form, &$form_state, Bean $bean, string $type = NULL) {
  * Validation for bean form
  */
 function bean_form_validate($form, &$form_state) {
-  $bean = $form_state['values']['bean'];
+  $bean = $form_state['bean'];
   $bean->label = $form_state['values']['label'];
   $bean->title = $form_state['values']['title'];
   $bean->view_mode = $form_state['values']['view_mode'];
-  $bean->is_new_revision = $form_state['values']['is_new_revision'];
+  $bean->is_new_revision = !empty($form_state['values']['is_new_revision']) ? TRUE : FALSE;
   // Avoid dataloss.
   if (empty($form_state['values']['is_new_revision'])) {
     $bean->default_revision = TRUE;
@@ -297,7 +310,7 @@ function bean_form_submit($form, &$form_state) {
   }
 
   // @todo: check if these are looking at the right values here and below.
-  $insert = $bean->internalIdentifier();
+  $insert = $bean->id();
   field_attach_submit('bean', $bean, $form, $form_state);
   $bean->save();
   $form_state['values']['bean'] = $bean;
@@ -351,7 +364,7 @@ function bean_form_submit_build_bean($form, &$form_state) {
   //   submit handlers that adjust $form_state['values'] prior to those values
   //   being used to update the entity. Module authors are encouraged to instead
   //   adjust the bean directly within a hook_bean_submit() implementation. For
-  //   Backdrop 8, evaluate whether the pattern of triggering form-level submit
+  //   the future, evaluate whether the pattern of triggering form-level submit
   //   handlers during button-level submit processing is worth supporting
   //   properly, and if so, add a Form API function for doing so.
   unset($form_state['submit_handlers']);

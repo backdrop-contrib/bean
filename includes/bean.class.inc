@@ -62,7 +62,6 @@ class Bean extends Entity {
     $this->entityInfo = entity_get_info($this->entityType());
     $this->idKey = $this->entityInfo['entity keys']['id'];
     $this->nameKey = $this->entityInfo['entity keys']['name'];
-
   }
 
   /**
@@ -72,6 +71,13 @@ class Bean extends Entity {
    */
   public function internalIdentifier() {
     return isset($this->{$this->idKey}) ? $this->{$this->idKey} : NULL;
+  }
+
+  /**
+   * Returns the delta of this entity.
+   */
+  public function identifier() {
+    return isset($this->{$this->nameKey}) ? $this->{$this->nameKey} : NULL;
   }
 
   /**
@@ -85,13 +91,6 @@ class Bean extends Entity {
    */
   public function id() {
     return $this->internalIdentifier();
-  }
-
-  /**
-   * Returns the delta of this entity.
-   */
-  public function identifier() {
-    return isset($this->{$this->nameKey}) ? $this->{$this->nameKey} : NULL;
   }
 
   /**
@@ -311,10 +310,11 @@ class Bean extends Entity {
   /**
    * Generate an array for rendering the entity.
    *
-   * @see entity_plus_view()
+   * Overrides EntityInterface::view().
    */
   public function view($view_mode = 'default', $langcode = NULL, $page = NULL) {
-    $content = parent::view($view_mode, $langcode);
+    $view = entity_get_controller($this->entityType())->view(array($this->id() => $this), $view_mode, $langcode, $page);
+    $content = $view[$this->entityType()][$this->id()];
     if (empty($this->plugin)) {
       return $content;
     }

@@ -53,9 +53,9 @@ abstract class BeanPlugin implements BeanTypePluginInterface {
   }
 
   /**
-   * Define the form values and their defaults
+   * Define the form values and their defaults.
    *
-   * Be sure to call combine the results form the parent::values() with yours
+   * Be sure to combine the results from the parent::values() with yours.
    */
   public function values() {
     return array(
