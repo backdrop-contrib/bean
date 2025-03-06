@@ -474,6 +474,8 @@ function bean_type_save($type) {
     $config->set($key, $value);
   }
   $config->save();
+
+  bean_reset();
   entity_info_cache_clear();
   state_set('menu_rebuild_needed', TRUE);
   return $status;
