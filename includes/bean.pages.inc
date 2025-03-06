@@ -662,3 +662,65 @@ function bean_revisions_page(Bean $bean) {
     '#empty' => t('There are no revisions'),
   );
 }
+
+
+/**
+ * Multiple bean deletion confirmation form.
+ *
+ * @see bean_multiple_delete_confirm_submit()
+ *
+ * @ingroup forms
+ */
+function bean_multiple_delete_confirm($form, &$form_state) {
+  if (isset($form_state['bids'])) {
+    $bids = $form_state['bids'];
+  }
+  elseif (isset($_SESSION['bean_delete_action']['timestamp']) && (REQUEST_TIME - $_SESSION['bean_delete_action']['timestamp'] < 6000)) {
+    $bids = $_SESSION['bean_delete_action']['bids'];
+    $form_state['bids'] = $bids;
+    $form_state['cache'] = TRUE;
+    unset($_SESSION['bean_delete_action']);
+  }
+  else {
+    $bids = array();
+  }
+
+  $form['#tree'] = TRUE;
+
+  if (empty($bids)) {
+    $destination = isset($_GET['destination']) ? $_GET['destination'] : 'admin/content/blocks';
+    $form['empty']['#markup'] = '<p>' . t('Return to the <a href="!url">blocks administration page</a>.', array('!url' => url($destination))) . '</p>';
+    backdrop_set_message(t('No block content has been selected for deletion.'), 'error');
+    return $form;
+  }
+
+  $form['bean_list'] = array(
+    '#theme' => 'item_list',
+    '#items' => array(),
+  );
+
+  $rows = db_query('SELECT bid, label FROM {bean} WHERE bid IN (:bids)', array(':bids' => $bids))->fetchAllKeyed();
+  foreach ($rows as $bid => $label) {
+    $form['beans'][$bid] = array(
+      '#type' => 'hidden',
+      '#value' => $bid,
+    );
+    $form['bean_list']['#items'][] = check_plain($label);
+  }
+
+  $confirm_question = format_plural(count($rows), 'Are you sure you want to delete this block content item?', 'Are you sure you want to delete these block content items?');
+  return confirm_form($form, $confirm_question, 'admin/content', t('This action cannot be undone.'), t('Delete'), t('Cancel'));
+}
+
+/**
+ * Form submission handler for bean_multiple_delete_confirm().
+ */
+function bean_multiple_delete_confirm_submit($form, &$form_state) {
+  bean_delete_multiple(array_keys($form_state['values']['beans']));
+  cache_clear_all();
+  $count = count($form_state['values']['beans']);
+  watchdog('content', 'Deleted @count block content items.', array('@count' => $count));
+
+  backdrop_set_message(format_plural($count, 'Deleted 1 block content item.', 'Deleted @count block content items.'));
+  $form_state['redirect'] = 'admin/content/blocks';
+}

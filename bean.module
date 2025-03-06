@@ -279,6 +279,14 @@ function bean_menu() {
       'weight' => 100,
     );
   }
+  $items['admin/content/blocks/delete'] = array(
+    'title' => 'Confirm block content deletion',
+    'type' => MENU_VISIBLE_IN_BREADCRUMB,
+    'page callback' => 'backdrop_get_form',
+    'page arguments' => array('bean_multiple_delete_confirm'),
+    'access arguments' => array('administer beans'),
+    'file' => 'includes/bean.pages.inc',
+  );
 
   return $items;
 }
@@ -892,6 +900,16 @@ function bean_delete(Bean $bean) {
 }
 
 /**
+ * Deletes multiple beans.
+ *
+ * @param $bids
+ *   An array of bean IDs.
+ */
+function bean_delete_multiple($bids) {
+  entity_delete_multiple('bean', $bids);
+}
+
+/**
  * Helper to easily create a bean.
  *
  * @param array $values
@@ -936,7 +954,7 @@ function bean_action_info() {
     'bean_delete_action' => array(
       'label' => t('Delete Bean'),
       'type' => 'bean',
-      'callback' => 'bean_delete',
+      'callback' => 'bean_delete_action',
     ),
   );
 }
@@ -1246,4 +1264,33 @@ function bean_config_info() {
     'group' => t('Bean block types'),
   );
   return $prefixes;
+}
+
+
+/**
+ * Queues a bean for deletion.
+ *
+ * @param Bean $bean
+ *   A bean entity.
+ * @param $context
+ *   Contextual information about the triggered action.
+ *
+ * @ingroup actions
+ */
+function bean_delete_action(Bean $bean, &$context) {
+  // Save the list of beans to be deleted in the session. Append to the existing
+  // list if within the last minute, otherwise start a new list of beans.
+  $last_action_time = 0;
+  if (isset($_SESSION['bean_delete_action'])) {
+    $last_action_time = $_SESSION['bean_delete_action']['timestamp'];
+  }
+  if (REQUEST_TIME - $last_action_time > 60) {
+    $_SESSION['bean_delete_action'] = array(
+      'timestamp' => REQUEST_TIME,
+      'bids' => array(),
+    );
+  }
+
+  $_SESSION['bean_delete_action']['bids'][] = $bean->id();
+  $context['redirect'] = 'admin/content/blocks/delete';
 }
