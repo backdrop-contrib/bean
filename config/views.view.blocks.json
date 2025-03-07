@@ -19,7 +19,7 @@
         },
         "access": {
           "type": "perm",
-          "perm": "view bean page"
+          "perm": "access bean overview"
         },
         "cache": {
           "type": "none"
