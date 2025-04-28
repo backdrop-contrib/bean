@@ -386,7 +386,7 @@ function bean_get_types() {
   $bean_types = &backdrop_static(__FUNCTION__);
 
   if (empty($bean_types)) {
-    $bean_types = bean_load_plugin_class_all();
+    $bean_types = module_exists('plugin_manager') ? bean_load_plugin_class_all() : array();
   }
 
   return $bean_types;
