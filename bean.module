@@ -470,7 +470,7 @@ function bean_type_save($type) {
     'description' => (string) $type->description,
     'options' => $type->options,
   );
-  foreach ($bundle_data as $key => $value) {
+  foreach ($type_data as $key => $value) {
     $config->set($key, $value);
   }
   $config->save();
