@@ -17,7 +17,7 @@ function bean_admin_ui_update_last_removed() {
  */
 function bean_admin_ui_update_1000() {
   $query = db_select('bean_type')
-        ->fields('type_id', 'name', 'label', 'options', 'description')
+        ->fields('bean_type', ['type_id', 'name', 'label', 'options', 'description'])
         ->orderBy('name', 'ASC');
   foreach ($query->execute() as $type_object) {
     $types[$type_object->name] = $type_object;
