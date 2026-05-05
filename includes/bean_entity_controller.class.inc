@@ -34,7 +34,7 @@ class BeanEntityController extends EntityPlusController {
   /**
  *
  */
-  public function delete($ids, DatabaseTransaction $transaction = NULL) {
+  public function delete($ids, ?DatabaseTransaction $transaction = NULL) {
     $beans = $ids ? $this->load($ids) : array();
 
     $deltas = array();
@@ -52,7 +52,7 @@ class BeanEntityController extends EntityPlusController {
   /**
    * Implements EntityPlusController::resetCache().
    */
-  public function resetCache(array $ids = NULL) {
+  public function resetCache(?array $ids = NULL) {
     bean_reset(TRUE);
     parent::resetCache($ids);
   }
