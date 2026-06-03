@@ -1111,6 +1111,21 @@ function bean_theme() {
 }
 
 /**
+ * Implements hook_preprocess_block().
+ */
+function bean_preprocess_block(&$variables) {
+  $block = $variables['block'];
+
+  if ($block instanceof BlockBean) {
+    $parts = explode('--', $block->delta);
+    $bean_type = isset($parts[1]) ? $parts[1] : '';
+    if ($bean_type !== '') {
+      $variables['classes'][] = backdrop_html_class('bean-' . $bean_type . '--wrapper');
+    }
+  }
+}
+
+/**
  * Implements hook_menu_local_tasks_alter().
  */
 function bean_menu_local_tasks_alter(&$data, $router_item, $root_path) {
