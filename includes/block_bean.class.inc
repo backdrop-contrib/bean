@@ -130,7 +130,7 @@ class BlockBean extends Block {
     parent::formSubmit($form, $form_state);
 
     $this->bean->setValues($form_state['values']);
-    $this->settings['title'] = 'asdfasdfasdfasd' . $form_state['values']['title'];
+    $this->settings['title'] = $form_state['values']['title'];
     $this->settings['title_display'] = $form_state['values']['title_display'];
     // @todo: If this starts working, it will save the Bean immediately, even
     // before the Layout is saved. This is not ideal.
