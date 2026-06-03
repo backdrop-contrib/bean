@@ -1120,7 +1120,7 @@ function bean_preprocess_block(&$variables) {
     $parts = explode('--', $block->delta);
     $bean_type = isset($parts[1]) ? $parts[1] : '';
     if ($bean_type !== '') {
-      $variables['classes'][] = backdrop_html_class($bean_type);
+      $variables['classes'][] = backdrop_html_class('bean-' . $bean_type . '--wrapper');
     }
   }
 }
