@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Contains callbacks for service resource manipulation.
@@ -131,7 +130,7 @@ function bean_services_resources() {
  *
  * @param $bean Bean
  *   An object as would be returned from bean_load().
- * @return
+ * @return mixed
  *   Unique identifier for the bean (bid) or errors if there was a problem.
  */
 function bean_services_create($bean) {
@@ -172,7 +171,7 @@ function bean_services_create($bean) {
  *   Unique identifier for this bean.
  * @param $bean Bean
  *   An object as would be returned from bean_load().
- * @return
+ * @return mixed
  *   Unique identifier for the bean (bid) or FALSE if there was a problem.
  */
 function bean_services_update($bid, $bean) {
@@ -204,10 +203,10 @@ function bean_services_update($bid, $bean) {
 /**
  * Returns a specified bean.
  *
- * @param $bid
+ * @param string $bid
  *   Unique identifier for the specified bean.
- * @return
- *   The bean object.
+ * @return Bean|FALSE
+ *   The bean object or FALSE if it could not be loaded.
  */
 function bean_services_retrieve($bid) {
   return bean_load($bid);
@@ -216,10 +215,10 @@ function bean_services_retrieve($bid) {
 /**
  * Delete a bean.
  *
- * @param $bid
+ * @param string $bid
  *   Unique identifier of the bean to delete.
- * @return
- *   True.
+ * @return bool
+ *   TRUE if the bean was successfully deleted, FALSE otherwise.
  */
 function bean_services_delete($bid) {
   $bean = bean_load($bid);

@@ -482,7 +482,7 @@ function bean_type_save($type) {
 /**
  * Reset the static variables and caches.
  */
-function bean_reset($skip_menu_rebuild = FALSE, $rehash_blocks = FALSE) {
+function bean_reset($skip_menu_rebuild = FALSE) {
   // Clear Plugin Manager statics and caches.
   plugin_manager_get_plugins_reset();
   cache_clear_all('plugin_manager_files:', 'cache', TRUE);
@@ -498,14 +498,6 @@ function bean_reset($skip_menu_rebuild = FALSE, $rehash_blocks = FALSE) {
   if (!$skip_menu_rebuild) {
     menu_rebuild();
   }
-
-  // @todo: Determine for certain if anything needs to be done with the below.
-  // -----------------------------------------------------------
-  // Rehashes blocks for active themes. This will populate the blocks table and
-  // allow modules like blockreference to work properly.
-  // if ($rehash_blocks && module_exists('block')) {
-  //   block_flush_caches();
-  // }
 }
 
 /**
@@ -1287,7 +1279,7 @@ function bean_config_info() {
  *
  * @param Bean $bean
  *   A bean entity.
- * @param $context
+ * @param array $context
  *   Contextual information about the triggered action.
  *
  * @ingroup actions
