@@ -16,3 +16,8 @@ description = Test that the individual methods of the bean and bean type classes
 group = Bean
 file = BeanUnitTests.test
 
+[BeanTitleOutputSanitizationTest]
+name = Bean title output sanitization
+description = Test that the bean template sanitizes the title to prevent stored XSS on the standalone view page.
+group = Bean
+file = BeanTitleOutputSanitizationTest.test

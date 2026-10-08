@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Bean Admin Page

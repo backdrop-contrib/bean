@@ -334,7 +334,9 @@ class Bean extends Entity {
 
     $this->changed = REQUEST_TIME;
 
-    $this->plugin->submit($this);
+    if (!empty($this->plugin)) {
+      $this->plugin->submit($this);
+    }
 
     $return = parent::save();
     bean_reset(TRUE, TRUE);
