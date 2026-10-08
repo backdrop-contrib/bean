@@ -4,8 +4,8 @@
  * Default theme implementation for beans.
  *
  * Available variables:
- * - $content: An array of comment items. Use render($content) to print them all, or
- *   print a subset such as render($content['field_example']). Use
+ * - $content: An array of comment items. Use render($content) to print them
+ *   all, or print a subset such as render($content['field_example']). Use
  *   hide($content['field_example']) to temporarily suppress the printing of a
  *   given element.
  * - $title: The (sanitized) entity label.
@@ -28,7 +28,7 @@
   <?php print render($title_suffix); ?>
   <div class="content"<?php print backdrop_attributes($content_attributes); ?>>
     <?php
-      print render($content);
+    print render($content);
     ?>
   </div>
 </div>
