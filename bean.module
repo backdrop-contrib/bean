@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Block Entity
@@ -55,7 +54,6 @@ function bean_entity_info() {
       'uri callback' => 'entity_class_uri',
       'access callback' => 'bean_access',
       'view callback' => 'bean_view_callback',
-      'module' => 'bean',
       'metadata controller class' => 'BeanMetadataController',
       'view modes' => array(
         'default' => array(
@@ -484,7 +482,7 @@ function bean_type_save($type) {
 /**
  * Reset the static variables and caches.
  */
-function bean_reset($skip_menu_rebuild = FALSE, $rehash_blocks = FALSE) {
+function bean_reset($skip_menu_rebuild = FALSE) {
   // Clear Plugin Manager statics and caches.
   plugin_manager_get_plugins_reset();
   cache_clear_all('plugin_manager_files:', 'cache', TRUE);
@@ -500,14 +498,6 @@ function bean_reset($skip_menu_rebuild = FALSE, $rehash_blocks = FALSE) {
   if (!$skip_menu_rebuild) {
     menu_rebuild();
   }
-
-  // @todo: Determine for certain if anything needs to be done with the below.
-  // -----------------------------------------------------------
-  // Rehashes blocks for active themes. This will populate the blocks table and
-  // allow modules like blockreference to work properly.
-  // if ($rehash_blocks && module_exists('block')) {
-  //   block_flush_caches();
-  // }
 }
 
 /**
@@ -650,11 +640,11 @@ function bean_load_revision($bid, $vid, $reset = FALSE) {
 /**
  * Fetch a bean object by its delta.
  *
- * @param $delta
+ * @param string $delta
  *   String specifying the bean delta.
- * @param $reset
+ * @param bool $reset
  *   A boolean indicating that the internal cache should be reset.
- * @return Bean
+ * @return Bean|bool
  *   A fully-loaded $bean object or FALSE if it cannot be loaded.
  */
 function bean_load_delta($delta, $reset = FALSE, $revision = NULL) {
@@ -689,14 +679,14 @@ function bean_delta_load($delta, $revision = NULL) {
 /**
  * Load multiple beans based on certain conditions.
  *
- * @param $bids
+ * @param array $bids
  *   An array of bean IDs.
- * @param $conditions
+ * @param array $conditions
  *   An array of conditions to match against the {bean} table.
- * @param $reset
+ * @param bool $reset
  *   A boolean indicating that the internal cache should be reset.
- * @return
- *   An array of bean objects, indexed by pid.
+ * @return array
+ *   An array of bean objects, indexed by bid.
  *
  * @see entity_load()
  * @see bean_load()
@@ -778,13 +768,13 @@ function bean_type_access($op, $type = NULL, $account = NULL) {
 /**
  * Determines whether the given user has access to a bean.
  *
- * @param $op
+ * @param string $op
  *   The operation being performed. One of 'view', 'update', 'create', 'delete'
  *   or just 'edit' (being the same as 'create' or 'update').
- * @param $bean
+ * @param Bean|string|NULL $bean
  *   Optionally a bean or a bean type to check access for. If nothing is
  *   given, access for all beans is determined.
- * @param $account
+ * @param User|NULL $account
  *   The user to check for. Leave it to NULL to check for the current user.
  * @return boolean
  *   Whether access is allowed or not.
@@ -813,7 +803,7 @@ function bean_access($op, $bean = NULL, $account = NULL) {
 
   $cid = is_object($bean) ? $bean->bid : $bean;
 
-  // If we've already checked access for this node, user and op, return from cache.
+  // If we've already checked access for this node, user and op, return cache.
   if (isset($rights[$account->uid][$cid][$op])) {
     return $rights[$account->uid][$cid][$op];
   }
@@ -880,10 +870,10 @@ function bean_add_page_access() {
 /**
  * Inserts or updates a bean object into the database.
  *
- * @param $bean
+ * @param Bean $bean
  *   The bean object to be inserted.
  *
- * @return
+ * @return int|bool
  *   Failure to write a record will return FALSE. Otherwise SAVED_NEW or
  *   SAVED_UPDATED is returned depending on the operation performed.
  */
@@ -894,8 +884,8 @@ function bean_save(Bean $bean) {
 /**
  * Deletes an existing bean.
  *
- * @param $bean
- *   The message object to be bean.
+ * @param Bean $bean
+ *   The bean object to be deleted.
  */
 function bean_delete(Bean $bean) {
   return $bean->delete();
@@ -904,7 +894,7 @@ function bean_delete(Bean $bean) {
 /**
  * Deletes multiple beans.
  *
- * @param $bids
+ * @param array $bids
  *   An array of bean IDs.
  */
 function bean_delete_multiple($bids) {
@@ -1289,7 +1279,7 @@ function bean_config_info() {
  *
  * @param Bean $bean
  *   A bean entity.
- * @param $context
+ * @param array $context
  *   Contextual information about the triggered action.
  *
  * @ingroup actions

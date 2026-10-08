@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * API documentation for the Bean module.
+ */
 
 /**
  * Implements hook_bean_types_api_info().
@@ -46,15 +50,15 @@ function hook_bean_types() {
  *
  * Access callback for beans
  *
- * @param $bean
- *  The fully loaded bean object
- * @param $op
- *  The access type of view, edit, delete, create
- * @param $account
- *  The user account
+ * @param Bean $bean
+ *   The fully loaded bean object.
+ * @param string $op
+ *   The access type of view, edit, delete, create.
+ * @param User $account
+ *   The user account.
  *
  * @return boolean
- *  True if access is allowed, FALSE if not.
+ *   TRUE if access is allowed, FALSE if not.
  */
 function hook_bean_access($bean, $op, $account) {
   return TRUE;

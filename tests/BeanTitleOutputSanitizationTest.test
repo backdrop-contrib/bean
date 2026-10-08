@@ -1,0 +1,56 @@
+<?php
+/**
+ * @file
+ * Tests that bean title output is sanitized in the standalone view page.
+ */
+
+include_once 'BeanSetup.test';
+
+/**
+ *
+ */
+class BeanTitleOutputSanitizationTest extends BeanSetup {
+  /**
+   * Test that script tags in bean title are stripped on the view page.
+   */
+  public function testScriptTagStrippedFromTitle() {
+    $xss_title = '<script>alert("xss")</script>Safe text';
+    $bean = bean_create(array(
+      'delta' => 'xss_output_test',
+      'label' => 'XSS Output Test',
+      'title' => $xss_title,
+      'type' => $this->plugin_name,
+      'view_mode' => 'default',
+    ));
+    bean_save($bean);
+
+    $this->backdropGet('block/xss_output_test');
+    $this->assertResponse(200);
+    $this->assertNoRaw('<script>alert("xss")</script>', 'Script tag is stripped from bean title on the standalone view page.');
+    $this->assertRaw('Safe text', 'Safe text portion of the title is preserved.');
+  }
+
+  /**
+   * Test that event handler attributes are stripped from allowed tags.
+   */
+  public function testEventHandlerStrippedFromAllowedTag() {
+    $bean = bean_create(array(
+      'delta' => 'event_handler_test',
+      'label' => 'Event Handler Test',
+      'title' => '<em onmouseover="alert(1)">hover me</em>',
+      'type' => $this->plugin_name,
+      'view_mode' => 'default',
+    ));
+    bean_save($bean);
+
+    $this->backdropGet('block/event_handler_test');
+    $this->assertResponse(200);
+    // The page title is also derived from the bean title (see
+    // Bean::defaultLabel()) and backdrop_set_title() escapes it, so the page
+    // contains a harmless "&lt;em onmouseover=&quot;...&quot;&gt;" copy of the
+    // raw value. Assert on the unescaped attribute, which is the only form
+    // that would actually execute.
+    $this->assertNoRaw('onmouseover="alert(1)"', 'Event handler attribute is stripped from bean title.');
+  }
+
+}
